@@ -71,11 +71,11 @@ void CScreen::refresh_display()
     std::string * s = global->get_variable("global_mode");
 
     if (strcmp(s->c_str(), "maildir") == 0)
-	drawMaildir();
+    drawMaildir();
     else if (strcmp(s->c_str(), "index") == 0)
-	drawIndex();
+    drawIndex();
     else if (strcmp(s->c_str(), "message") == 0)
-	drawMessage();
+    drawMessage();
     else {
         move(3, 3);
         printw("UNKNOWN MODE: '%s'", s->c_str());
@@ -111,13 +111,26 @@ void CScreen::drawMaildir()
      */
     int count = display.size();
     int height = CScreen::height();
+    //TODO make the statusbar a variable
+    int middle = (height-2)/2; //correct for statusbar
     int selected = global->get_selected_folder();
 
+    int highlightRow = 0;
+    int TopBottomOrMiddle = -1;
+    if (selected < middle) {
+        highlightRow = selected;
+        TopBottomOrMiddle = 0;
+    } else if ( count - selected <= middle) {
+        highlightRow =  height - count+selected-1 ;
+        TopBottomOrMiddle = 1;
+    } else {
+        highlightRow = middle;
+        TopBottomOrMiddle = 2;
+    }
     /**
      * If we have no messages report that.
      */
-    if ( count < 1 )
-    {
+    if ( count < 1 ) {
         move(2, 2);
         printw("No maildirs found matching the limit '%s'.", limit->c_str());
         return;
@@ -125,11 +138,11 @@ void CScreen::drawMaildir()
 
 
     /**
-     * Bound the selection.
+     * wrap the selection.
      */
     if (selected >= count) {
-	global->set_selected_folder(0);
-	selected = 0;
+        global->set_selected_folder(0);
+        selected = 0;
     }
 
     int row = 0;
@@ -142,33 +155,36 @@ void CScreen::drawMaildir()
     for (row = 0; row < (height - 1); row++) {
         int unread = 0;
 
-	move(row, 0);
-	printw("  " );
+        move(row, 0);
+        printw("  ");
 
         /**
          * The current object.
          */
-	CMaildir *cur = NULL;
-	if ((row + selected) < count) {
-	    cur = &display[row + selected];
-            unread = cur->newMessages();
+        CMaildir *cur = NULL;
+        if (TopBottomOrMiddle == 0) {
+            cur = &display[row];
+        } else if (TopBottomOrMiddle == 1) {
+            cur = &display.at(count-height + row +1);
+        } else {
+            cur = &display[row + selected - middle];
         }
+        unread = cur->newMessages();
 
         /**
          * Is this folder part of our selected set?
          */
-        bool selected = false;
-	if (cur != NULL) {
-	    if (std::find(sfolders.begin(), sfolders.end(), cur->path()) != sfolders.end())
-		selected = true;
-	}
+        bool selectedSet = false;
+        if (cur != NULL) {
+            if (std::find(sfolders.begin(), sfolders.end(), cur->path()) != sfolders.end())
+            selectedSet = true;
+        }
 
         /**
          * First row is the current one.
          */
-	if (row == 0)
-          attron(A_STANDOUT);
-
+        if (row == highlightRow)
+            attron(A_UNDERLINE | A_STANDOUT);
 
         /**
          * The item we'll draw for this row.
@@ -179,32 +195,31 @@ void CScreen::drawMaildir()
          * Format.
          */
         if ( cur != NULL )
-            display = cur->format( selected );
+            display = cur->format( selectedSet );
 
         /**
          * Overwrite the full length.
          */
-	while ((int)display.size() < (CScreen::width() - 3))
+        while ((int)display.size() < (CScreen::width() - 3))
             display += std::string(" ");
 
-	move(row, 2);
+        move(row, 2);
 
-        if ( unread )
-        {
+        if ( unread ) {
             if ( row == 0 )
                 attrset( COLOR_PAIR(m_colours[unread_colour]) |A_REVERSE );
             else
                 attrset( COLOR_PAIR(m_colours[unread_colour]) );
         }
-	printw("%s", display.c_str());
+        printw("%s", display.c_str());
 
         attrset( COLOR_PAIR(m_colours["white"]));
 
         /**
          * Remove the inverse.
          */
-	if (row == 0)
-	    attroff(A_STANDOUT);
+        // if (row == 0)
+        //     attroff(A_STANDOUT);
     }
 }
 
@@ -299,19 +314,19 @@ void CScreen::drawIndex()
 
     for (row = 0; row < (height - 1); row++)
     {
-	move(row, 0);
-	printw("  " );
+    move(row, 0);
+    printw("  " );
 
         /**
          * What we'll output for this row.
          */
-	std::string  buf;
+    std::string  buf;
 
         /**
          * The current object.
          */
-	CMessage *cur = NULL;
-	if ((row + selected) < count)
+    CMessage *cur = NULL;
+    if ((row + selected) < count)
             cur = messages->at(row + selected);
 
         bool unread = false;
@@ -321,7 +336,7 @@ void CScreen::drawIndex()
                 unread = true;
         }
 
-	if ( unread ) {
+    if ( unread ) {
             if (row == 0)
                 attrset(COLOR_PAIR(m_colours[unread_colour])|A_REVERSE);
             else
@@ -332,32 +347,32 @@ void CScreen::drawIndex()
                 attrset(A_REVERSE);
         }
 
-	std::string path = "";
+    std::string path = "";
 
-	if (cur != NULL)
+    if (cur != NULL)
             buf =  cur->format();
 
         /**
          * Pad.
          */
-	while ((int)buf.size() < (CScreen::width() - 3))
+    while ((int)buf.size() < (CScreen::width() - 3))
             buf += std::string(" ");
         /**
          * Truncate.
          */
-	if ((int)buf.size() > (CScreen::width() - 3))
-	    buf[(CScreen::width() - 3)] = '\0';
+    if ((int)buf.size() > (CScreen::width() - 3))
+        buf[(CScreen::width() - 3)] = '\0';
 
-	move(row, 2);
-	printw("%s", buf.c_str());
+    move(row, 2);
+    printw("%s", buf.c_str());
 
         attrset( COLOR_PAIR(m_colours[ "white"]));
 
         /**
          * Remove the inverse.
          */
-	if (row == 0)
-	    attroff(A_REVERSE);
+    if (row == 0)
+        attroff(A_REVERSE);
     }
 }
 
@@ -572,9 +587,9 @@ void CScreen::setup()
      */
     if (!has_colors() || (start_color() != OK))
     {
-	endwin();
-	std::cerr << MISSING_COLOR_SUPPORT << std::endl;
-	exit(1);
+    endwin();
+    std::cerr << MISSING_COLOR_SUPPORT << std::endl;
+    exit(1);
     }
 
     keypad(stdscr, TRUE);
@@ -641,7 +656,7 @@ void CScreen::clear_status()
     move(CScreen::height() - 1, 0);
 
     for (int i = 0; i < CScreen::width(); i++)
-	printw(" ");
+    printw(" ");
 
 }
 
