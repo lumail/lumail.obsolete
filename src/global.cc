@@ -67,6 +67,7 @@ CGlobal::CGlobal()
     set_variable( "completion_chars",new std::string("'\"( ,") );
     set_variable( "editor",          new std::string("/usr/bin/vim") );
     set_variable( "global_mode",     new std::string("maildir"));
+    set_variable( "history_file",    new std::string( "" ) );
     set_variable( "index_format",    new std::string( "[$FLAGS] $FROM - $SUBJECT" ) );
     set_variable( "index_limit",     new std::string("all") );
     set_variable( "maildir_format",  new std::string( "$CHECK - $PATH" ) );
@@ -176,8 +177,8 @@ bool sort_messages(CMessage *a, CMessage *b)
         if  ( ( sort != NULL ) && ( strcmp( sort->c_str(), "subject-desc" ) == 0 ) )
             asc = false;
 
-        std::string as = a->subject();
-        std::string bs = b->subject();
+        std::string as = a->header("Subject");
+        std::string bs = b->header("Subject");
 
         if ( ! asc )
         {
@@ -209,8 +210,8 @@ bool sort_messages(CMessage *a, CMessage *b)
         if  ( ( sort != NULL ) && ( strcmp( sort->c_str(), "from-desc" ) == 0 ) )
             asc = false;
 
-        std::string as = a->from();
-        std::string bs = b->from();
+        std::string as = a->header("From");
+        std::string bs = b->header("From");
 
         if ( ! asc )
         {
@@ -265,13 +266,10 @@ bool sort_maildir_ptr_by_name(CMaildir *a, CMaildir *b)
     assert( NULL != a );
     assert( NULL != b );
 
-    std::string a_path = a->path();
-    std::string b_path = b->path();
-
-    std::transform(a_path.begin(), a_path.end(), a_path.begin(), tolower);
-    std::transform(b_path.begin(), b_path.end(), b_path.begin(), tolower);
-
-    return( strcmp( a_path.c_str(), b_path.c_str() ) < 0 );
+    /**
+     * Sort case-insesitively.
+     */
+    return( strcasecmp(a->path().c_str(), b->path().c_str() ) < 0 );
 }
 
 

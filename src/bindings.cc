@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#include <gmime/gmime.h>
+
 #include "bindings.h"
 #include "variables.h"
 #include "debug.h"
@@ -41,6 +43,7 @@
 #include "lua.h"
 #include "global.h"
 #include "screen.h"
+
 
 
 int unused __attribute__((unused));
@@ -176,10 +179,18 @@ int sleep(lua_State *L )
  */
 int exit(lua_State * L)
 {
+    /**
+     * Close curses.
+     */
     endwin();
 
+    /**
+     * Shutdown GMime.
+     */
+    g_mime_shutdown();
+
     CLua *lua = CLua::Instance();
-    lua->call_function("on_exit");
+    lua->execute("on_exit()");
 
     exit(0);
     return 0;
@@ -191,9 +202,18 @@ int exit(lua_State * L)
  */
 int abort(lua_State * L)
 {
-    const char *str = lua_tostring(L, -1);
 
+    /**
+     * Close curses.
+     */
     endwin();
+
+    /**
+     * Shutdown GMime.
+     */
+    g_mime_shutdown();
+
+    const char *str = lua_tostring(L, -1);
 
     if (str != NULL)
         std::cerr << str << std::endl;
@@ -1157,7 +1177,7 @@ int header(lua_State * L)
 /**
  * Mark the message as new.
  */
-int mark_new(lua_State * L)
+int mark_unread(lua_State * L)
 {
     /**
      * Get the path (optional).
@@ -1172,7 +1192,7 @@ int mark_new(lua_State * L)
         return( 0 );
     }
     else
-        msg->mark_new();
+        msg->mark_unread();
 
     if ( str != NULL )
         delete( msg );
@@ -1684,186 +1704,6 @@ int mime_type(lua_State *L)
 
 
 /**
- * Attach a file via a mime-entity.
- */
-bool mimetic_attach_file(lua_State *L, mimetic::MimeEntity *m, char* filename)
-{
-    std::filebuf ifile;
-    std::ostringstream encoded;
-
-    /**
-     * Get the MIME-type of the file.
-     */
-    lua_pushstring(L, filename );
-    if ( mime_type( L ) != 1 )
-        return false;
-
-    const char *type = lua_tostring(L,-1);
-
-    ifile.open(filename, std::ios::in);
-    if (ifile.is_open())
-    {
-        std::istream is(&ifile);
-        mimetic::Attachment *at = new mimetic::Attachment(filename, mimetic::ContentType(type));
-        mimetic::Base64::Encoder b64;
-        std::ostreambuf_iterator<char> oi(encoded);
-        std::istreambuf_iterator<char> ibegin(is), iend;
-        encode(ibegin, iend, b64, oi);
-        at->body().assign(encoded.str());
-        m->body().parts().push_back(at);
-        ifile.close();
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-    return false;
-}
-
-/**
- * Handle adding attachments to a plain mail.
- *
- * Given a file containing an email to be sent we must parse it sufficiently
- * well to build a MIME-based message instead.
- *
- * Then add any referenced files to it.
- *
- * This is horrid..
- *
- */
-bool handle_attachments( lua_State *L, char *filename, std::vector<std::string> files )
-{
-    mimetic::MimeEntity *message = 0;
-    mimetic::MimeVersion v1("1.0");
-
-    /**
-     * Open the file, and parse it into header + body.
-     */
-    bool in_header = true;
-
-    std::ifstream input (filename);
-    if ( !input.is_open() )
-        return false;
-
-    /**
-     * Headers + body text.
-     */
-    std::vector<std::string> headers;
-    std::string text;
-
-    /**
-     * Read line by line.
-     */
-    while( input.good() )
-    {
-        std::string line;
-        getline( input, line );
-
-        /**
-         * If we're in the header store it away.
-         */
-        if ( in_header )
-        {
-            if ( line.length() <= 0 )
-                in_header = false;
-            else
-                headers.push_back( line );
-        }
-        else
-        {
-            text += line;
-            text += "\n";
-        }
-    }
-    input.close();
-
-
-    try
-    {
-
-        message = new  mimetic::MimeEntity;
-
-        message->body().assign(text);
-        message->header().contentType("text/plain; charset=utf-8");
-        message->header().contentTransferEncoding("8bit");
-        message->header().mimeVersion(v1);
-
-        /**
-         * Add files.
-         */
-        std::vector<std::string>::iterator it;
-        for (it = files.begin(); it != files.end(); ++it)
-        {
-            std::string path = (*it);
-
-            mimetic::MimeEntity *m = message;
-            message = new mimetic::MultipartMixed();
-            message->header().mimeVersion(v1);
-            message->body().parts().push_back(m);
-            mimetic_attach_file(L, message, (char *)path.c_str() );
-        }
-
-        /**
-         * OK iterate over the headers we've received.
-         */
-        for (it = headers.begin(); it != headers.end(); ++it)
-        {
-            std::string head = (*it);
-
-            std::size_t offset = head.find(":");
-            if ( offset != std::string::npos )
-            {
-                std::string header = head.substr(0, offset);
-                std::string value  = head.substr(offset+1);
-
-                message->header().field( header ).value( value );
-            }
-
-        }
-
-        /**
-         * Get the message in a way we can examine.
-         */
-        std::ostringstream output;
-        output << *message << std::endl;
-        delete message;
-
-        /**
-         * Now overwrite our temporary file with the updated
-         * version.
-         */
-        std::string content = output.str();
-        std::ofstream myfile;
-        myfile.open (filename);
-        myfile << output.str();
-        myfile.close();
-        return( true );
-
-    }
-    catch(std::exception &e)
-    {
-        if (message)
-            delete message;
-        return false;
-    }
-    catch(std::string &e)
-    {
-        if (message)
-            delete message;
-        return false;
-    }
-    catch (...)
-    {
-        if (message)
-            delete message;
-        return false;
-    }
-}
-
-
-
-/**
  * Count messages in the selected folder(s).
  */
 int count_messages(lua_State * L)
@@ -1888,11 +1728,16 @@ int compose(lua_State * L)
     int ret = prompt( L);
     if ( ret != 1 )
     {
-        lua_pushstring(L, "Error receiving recipient" );
+        lua_pushstring(L, "Error receiving recipient." );
         return( msg(L ) );
-
     }
+
     const char *recipient = lua_tostring(L,-1);
+    if ( strlen(recipient) < 1 )
+    {
+        lua_pushstring(L, "Empty recipient, aborting." );
+        return( msg(L ) );
+    }
 
     /**
      * Prompt for subject.
@@ -1905,7 +1750,17 @@ int compose(lua_State * L)
         return( msg(L ) );
     }
 
-    const char *subject = lua_tostring(L,-1);
+    /**
+     * Get the subject.
+     */
+    const char *subject         = lua_tostring(L,-1);
+    const char *default_subject = "No subject";
+
+    /**
+     * If empty, use the default.
+     */
+    if ( strlen(subject) < 1 )
+        subject = default_subject;
 
     CGlobal *global   = CGlobal::Instance();
     std::string *from = global->get_variable( "from" );
@@ -2090,17 +1945,29 @@ int compose(lua_State * L)
     }
 
     /**
+     **
+     **
+     *
+     * At this point we have a filename containing the text of the
+     * email with all the appropriate headers.
+     *
+     * We also have a vector of filenames which need to be attached
+     * to the outgoing mail.
+     *
+     * We want to combine these two things into something that we
+     * can send.
+     *
+     **
+     **
+     **
+     */
+    CMessage::add_attachments_to_mail( filename, attachments );
+
+
+    /**
      * Call the on_send_message hook, with the path to the message.
      */
     call_message_hook( "on_send_message", filename );
-
-    /**
-     * If attachments are non-empty we need to handle them.
-     */
-    if ( attachments.size() > 0 )
-    {
-        handle_attachments( L, filename, attachments );
-    }
 
 
     /**
@@ -2156,8 +2023,8 @@ int reply(lua_State * L)
     /**
      * Get the subject, and sender, etc.
      */
-    std::string subject = mssg->subject();
-    std::string to      = mssg->from();
+    std::string subject = mssg->header("Subject");
+    std::string to      = mssg->header("From");
     std::string ref     = mssg->header( "Message-ID" );
 
 
@@ -2386,17 +2253,29 @@ int reply(lua_State * L)
 
 
     /**
+     **
+     **
+     *
+     * At this point we have a filename containing the text of the
+     * email with all the appropriate headers.
+     *
+     * We also have a vector of filenames which need to be attached
+     * to the outgoing mail.
+     *
+     * We want to combine these two things into something that we
+     * can send.
+     *
+     **
+     **
+     **
+     */
+    CMessage::add_attachments_to_mail( filename, attachments );
+
+
+    /**
      * Call the on_send_message hook, with the path to the message.
      */
     call_message_hook( "on_send_message", filename );
-
-    /**
-     * If attachments are non-empty we need to handle them.
-     */
-    if ( attachments.size() > 0 )
-    {
-        handle_attachments( L, filename, attachments );
-    }
 
 
     /**
@@ -2600,10 +2479,25 @@ int send_email(lua_State *L)
      */
     std::string *sendmail  = global->get_variable("sendmail_path");
 
-    if ( filenames.size() > 0 )
-    {
-        handle_attachments( L, filename, filenames );
-    }
+    /**
+     **
+     **
+     *
+     * At this point we have a filename containing the text of the
+     * email with all the appropriate headers.
+     *
+     * We also have a vector of filenames which need to be attached
+     * to the outgoing mail.
+     *
+     * We want to combine these two things into something that we
+     * can send.
+     *
+     **
+     **
+     **
+     */
+    CMessage::add_attachments_to_mail( filename, filenames );
+
 
 
     /**
@@ -2961,7 +2855,12 @@ int log_message(lua_State *L)
     if (str == NULL)
         return luaL_error(L, "Missing argument to log_message(..)");
 
-    DEBUG_LOG( str );
+    /**
+     * Log the message, and force it to be written immediately
+     * bypassing the buffering.
+     */
+    CDebug::Instance()->debug( str, true );
+
 #endif
     return 0;
 }

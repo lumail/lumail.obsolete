@@ -64,6 +64,7 @@ struct CLuaMapping primitive_list[] =
     {"exec", "Execute an external command.", (lua_CFunction) exec },
     {"exit", "Exit lumail.", (lua_CFunction) exit },
     {"help", "Show brief help for primitives.", (lua_CFunction) show_help },
+    {"history_file", "The path to log history to.", (lua_CFunction) history_file },
     {"log_message", "Add a message to the debug-log.", (lua_CFunction) log_message },
     {"mime_type", "Get the MIME-type for a file.", (lua_CFunction) mime_type },
     {"msg", "Write a message to the status-area.", (lua_CFunction) msg },
@@ -104,8 +105,8 @@ struct CLuaMapping primitive_list[] =
     {"maildir_format", "Query or update the maildir-format string.", (lua_CFunction) maildir_format },
     {"maildir_limit", "Query or update the maildir-limit string.", (lua_CFunction) maildir_limit },
     {"maildir_prefix", "Query or update the root of the Maildir hierarchy.", (lua_CFunction) maildir_prefix },
-    {"message_filter", "Query or update the filter to apply to messages being viewed.", (lua_CFunction) message_filter },
-    {"msg_filter", "Query or update the filter to apply to messages being processed.", (lua_CFunction) msg_filter },
+    {"display_filter", "Query or update the filter to apply to messages being viewed.", (lua_CFunction) display_filter },
+    {"mail_filter", "Query or update the filter to apply to messages being processed.", (lua_CFunction) mail_filter },
     {"sendmail_path", "Query or update the sendmail-path, used for sending mails.", (lua_CFunction) sendmail_path },
     {"sent_mail", "Query or update the Maildir location to send outgoing mails to.", (lua_CFunction) sent_mail },
     {"sort", "Query or update the sorting string for index-mode.", (lua_CFunction) sort },
@@ -138,7 +139,7 @@ struct CLuaMapping primitive_list[] =
     {"delete", "Delete the current message.", (lua_CFunction) delete_message },
     {"header", "Retrieve the value of the given header from the current message.", (lua_CFunction) header },
     {"is_new", "Is the current message new/unread?", (lua_CFunction) is_new },
-    {"mark_new", "Mark the current message as new/unread.", (lua_CFunction) mark_new },
+    {"mark_unread", "Mark the current message as unread.", (lua_CFunction) mark_unread },
     {"mark_read", "Mark the current message as old/read.", (lua_CFunction) mark_read },
     {"reply", "Reply to the current message.", (lua_CFunction) reply },
     {"save", "Save the current message in a new location, and delete it.", (lua_CFunction) save_message },
@@ -288,25 +289,6 @@ void CLua::execute(std::string lua)
     }
 }
 
-/**
- * Call a single Lua function, passing no arguments and ignoring the return code.
- */
-bool CLua::call_function(std::string name)
-{
-#ifdef LUMAIL_DEBUG
-    std::string dm = "CLua::call_function(\"" + name + "\");";
-    DEBUG_LOG( dm );
-#endif
-
-    lua_getglobal(m_lua, name.c_str());
-    if (lua_isfunction(m_lua, -1))
-    {
-        lua_pcall(m_lua, 0, 0, 0);
-        return true;
-    }
-    else
-        return false;
-}
 
 
 /**

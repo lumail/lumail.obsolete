@@ -20,6 +20,7 @@
 #define _debug_h_ 1
 
 #include <cassert>
+#include <vector>
 #include <string>
 
 
@@ -41,8 +42,7 @@
 #ifndef DEBUG_LOG
 #define DEBUG_LOG(x)                     \
     do {                                 \
-        CDebug *d = CDebug::Instance();  \
-        d->debug(x);                     \
+        CDebug::Instance()->debug(x);    \
     } while(0);
 #endif
 
@@ -50,6 +50,9 @@
 
 /**
  * Singleton class to maintain debug-log of execution.
+ *
+ * As a minor optimization we buffer log-messages and only write them
+ * out to disk every 50 messages or so.
  */
 class CDebug
 {
@@ -62,14 +65,16 @@ class CDebug
   static CDebug *Instance();
 
   /**
-   * Set the logfile.
+   * Set the path to the file we're logging to.
    */
   void set_logfile( std::string path );
 
   /**
    * Add a new string to the log.
+   *
+   * NOTE: The string might be buffered and not hit the disk immediately.
    */
-  void debug( std::string line );
+  void debug( std::string line, bool force = false );
 
  protected:
 
@@ -84,7 +89,7 @@ class CDebug
 
 
   /**
-   * Get a date/timestamp.
+   * Get the current date/time-stamp.
    */
   std::string timestamp();
 
@@ -97,6 +102,11 @@ class CDebug
    * The filename we log to.
    */
   std::string m_logfile;
+
+  /**
+   * Temporary storage for buffered strings.
+   */
+  std::vector<std::string> m_pending;
 
 };
 
