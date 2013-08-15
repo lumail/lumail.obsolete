@@ -102,7 +102,7 @@ public:
     /**
      * Read a line of input via the status-line.
      */
-    static std::string get_line();
+    static Glib::ustring get_line();
 
 private:
 

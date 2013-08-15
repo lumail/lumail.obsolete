@@ -1172,9 +1172,9 @@ std::vector<std::string> CScreen::get_completions( std::string token )
 /**
  * Read a line of input from the user.
  */
-std::string CScreen::get_line()
+Glib::ustring CScreen::get_line()
 {
-    std::string buffer;
+    Glib::ustring buffer;
 
     int old_curs = curs_set(1);
     int pos = 0;
@@ -1202,9 +1202,10 @@ std::string CScreen::get_line()
 
     while( true )
     {
-        int c;
+        gunichar c;
+        bool isKey;
 
-        mvaddnstr(y, x, buffer.c_str(), buffer.size());
+        mvaddnstr(y, x, buffer.c_str(), buffer.bytes());
 
         /**
          * Clear the line.
@@ -1220,23 +1221,21 @@ std::string CScreen::get_line()
         /**
          * Get input - paying attention to the buffer set by 'stuff()'.
          */
-        c = CInput::Instance()->get_char();
+        isKey = (CInput::Instance()->get_wchar(&c) == KEY_CODE_YES);
 
         /**
          * Ropy input-handler.
          */
-        if (c == KEY_ENTER || c == '\n' || c == '\r')
+        if ( (isKey && c == KEY_ENTER) || (c == '\n' || c == '\r') )
         {
             break;
         }
-        else if (isprint(c))
+        else if ( !isKey && g_unichar_isprint(c) )
         {
             /**
              * Insert the character into the buffer-string.
              */
-            char tmp[2] = { '\0', '\0'};
-            tmp[0]= c;
-            buffer.insert(pos, tmp);
+            buffer += c;
             pos +=1;
         }
         else if (c == 1 )   /* ctrl-a : beginning of line*/
@@ -1266,7 +1265,7 @@ std::string CScreen::get_line()
             if (pos < (int)buffer.size())
                 pos += 1;
         }
-        else if ( c == KEY_UP )
+        else if ( isKey && c == KEY_UP )
         {
             hoff -= 1;
             if ( hoff >= 0 )
@@ -1279,7 +1278,7 @@ std::string CScreen::get_line()
                 hoff = 0;
             }
         }
-        else if ( c == KEY_DOWN )
+        else if ( isKey && c == KEY_DOWN )
         {
             hoff += 1;
             if ( hoff < history->size() )
@@ -1292,7 +1291,7 @@ std::string CScreen::get_line()
                 hoff = history->size();
             }
         }
-        else if (c == KEY_BACKSPACE)
+        else if ( isKey && c == KEY_BACKSPACE )
         {
             if (pos > 0)
             {
@@ -1310,7 +1309,7 @@ std::string CScreen::get_line()
                 buffer.erase(pos,1);
             }
         }
-        else if (c == '\t' )  /* TAB-completion */
+        else if ( c == '\t' )  /* TAB-completion */
         {
             /**
              * We're going to find the token to complete against
