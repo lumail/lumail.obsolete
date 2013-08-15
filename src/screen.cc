@@ -806,7 +806,7 @@ void CScreen::clear_status()
 /**
  * Some simple remapping of keyboard input.
  */
-const char *CScreen::get_key_name( int c )
+const char *CScreen::get_key_name( gunichar c, bool isKeyCode )
 {
     if ( c == '\n' )
         return( "Enter" );
@@ -817,11 +817,15 @@ const char *CScreen::get_key_name( int c )
     if ( c == ' ' )
         return ( "Space" );
 
-    const char *name = keyname( c );
+    const char *name;
+    if (isKeyCode)
+        name = keyname( c );
+    else
+        name = key_name( c );
+
     if ( name == NULL )
         return( "UnkSymbol" );
     return name;
-
 }
 
 /**
