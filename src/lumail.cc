@@ -166,9 +166,9 @@ void CLumail::run_event_loop()
      */
     while (true)
     {
-        int key = CInput::Instance()->get_char();
+        gunichar key;
 
-        if (key == ERR)
+        if (CInput::Instance()->get_wchar(&key) == ERR)
         {
             /*
              * Timeout - so we go round the loop again.
