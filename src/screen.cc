@@ -565,14 +565,13 @@ void CScreen::drawMessage()
          * The header-name, in useful format - i.e. without the '$' prefix
          * and in lower-case.
          */
-        std::string name = (*it);
-        name = name.substr(1);
-        std::transform(name.begin(), name.end(), name.begin(), tolower);
+        Glib::ustring name = (*it);
+        name = name.substr(1).lowercase();
 
         /**
          * Upper-case first character.
          */
-        name[0] = toupper(name[0]);
+        name = name.substr(0, 1).uppercase() + name.substr(1);
 
         /**
          * Now we've gone from "$DATE" -> "Date", etc.
@@ -581,7 +580,7 @@ void CScreen::drawMessage()
         /**
          * Get the header-value, via the formatter.
          */
-        std::string value = cur->format( *it );
+        Glib::ustring value = cur->format( *it );
 
         /**
          * Truncate to avoid long-wraps.
@@ -661,7 +660,7 @@ void CScreen::drawMessage()
     for( int row_idx = 0, line_idx = 0;;)
     {
 
-        std::string line = "";
+        Glib::ustring line = "";
 
         /** Get current line */
         if ( (line_idx + offset) < (int)body.size() )
@@ -674,7 +673,7 @@ void CScreen::drawMessage()
 
         int len = line.length();
         int slen = 0;
-        std::string subline = line.substr(0, width);
+        Glib::ustring subline = line.substr(0, width);
         for(;;)
         {
             move( row_idx + ( headers.size() + attachments.size() + 1 ), 0 );
