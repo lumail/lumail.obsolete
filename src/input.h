@@ -21,6 +21,7 @@
 
 #include <string>
 #include <vector>
+#include <glibmm/ustring.h>
 
 /**
  * Singleton class to maintain a faux input-buffer.
@@ -39,11 +40,12 @@ public:
      * Get a character from either our faux buffer, or via curses.
      */
     int get_char();
+    int get_wchar(gunichar *wch);
 
     /**
      * Enqueue some input to the input buffer.
      */
-    void add( std::string input );
+    void add( Glib::ustring input );
 
 
 protected:
@@ -65,7 +67,7 @@ private:
     /**
      * Our pending input.
      */
-    std::string m_pending;
+    Glib::ustring m_pending;
 
     /**
      * The current position within our pending-input string.

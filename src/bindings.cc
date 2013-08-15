@@ -316,7 +316,7 @@ int stuff(lua_State * L)
     if (str == NULL)
         return luaL_error(L, "Missing argument to stuff(..)");
 
-    CInput::Instance()->add( std::string( str ) );
+    CInput::Instance()->add( Glib::ustring( str ) );
 
     return 0;
 }

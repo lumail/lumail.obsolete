@@ -56,7 +56,7 @@ CInput::CInput()
 /**
  * Enqueue some input to the input buffer.
  */
-void CInput::add( std::string input )
+void CInput::add( Glib::ustring input )
 {
     m_pending = input;
     m_offset  = 0;
@@ -65,6 +65,8 @@ void CInput::add( std::string input )
 
 /**
  * Get a character from either our faux buffer, or via curses.
+ *
+ * This is the old, non-Unicode version, here only for compatibility reasons.
  */
 int CInput::get_char()
 {
@@ -93,4 +95,37 @@ int CInput::get_char()
      * Otherwise defer to ncurses.
      */
     return( getch() );
+}
+
+/**
+ * Get a character from either our faux buffer, or via curses.
+ */
+int CInput::get_wchar(gunichar *wch)
+{
+    /**
+     * If we have pending history - return the next character from it.
+     */
+    if ( !m_pending.empty() )
+    {
+        /**
+         * If we've not walked off the end.
+         */
+        if ( m_offset < m_pending.size() )
+        {
+            /**
+             * Get the character and return it,
+             * updating our current-offset.
+             */
+            gunichar c = m_pending.at( m_offset );
+            *wch = c;
+            m_offset += 1;
+
+            return ( OK );
+        }
+    }
+
+    /**
+     * Otherwise defer to ncurses.
+     */
+    return( get_wch(wch) );
 }
