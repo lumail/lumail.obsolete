@@ -931,10 +931,13 @@ std::string CScreen::choose_string( std::vector<std::string> choices )
         }
         wrefresh(childwin);
 
-        int key = CInput::Instance()->get_char();
-        if ( key == '\n' )
+        gunichar key;
+        bool isKeyCode;
+        isKeyCode = (CInput::Instance()->get_wchar(&key) == KEY_CODE_YES);
+
+        if ( !isKeyCode && key == '\n' )
             done = true;
-        if ( key == 27 )
+        else if ( !isKeyCode && key == 27 )
         {
             delwin(childwin);
             clear_main();
@@ -942,21 +945,20 @@ std::string CScreen::choose_string( std::vector<std::string> choices )
             timeout(1000);
             return "";
         }
-        if ( key == '\t' )
+        else if ( !isKeyCode && key == '\t' )
         {
             selected += 1;
             if ( selected >= (int)choices.size() )
                 selected = 0;
         }
 
-        const char *name = get_key_name( key );
-        if ( strcmp( name, "KEY_RIGHT" ) == 0 )
+        else if ( isKeyCode && key == KEY_RIGHT )
         {
             selected += 1;
             if ( selected >= (int)choices.size() )
                 selected = 0;
         }
-        if ( strcmp( name, "KEY_LEFT" ) == 0 )
+        else if ( isKeyCode && key == KEY_LEFT )
         {
             selected -= 1;
             if ( selected < 0 )
@@ -1203,7 +1205,7 @@ Glib::ustring CScreen::get_line()
     while( true )
     {
         gunichar c;
-        bool isKey;
+        bool isKeyCode;
 
         mvaddnstr(y, x, buffer.c_str(), buffer.bytes());
 
@@ -1221,16 +1223,16 @@ Glib::ustring CScreen::get_line()
         /**
          * Get input - paying attention to the buffer set by 'stuff()'.
          */
-        isKey = (CInput::Instance()->get_wchar(&c) == KEY_CODE_YES);
+        isKeyCode = (CInput::Instance()->get_wchar(&c) == KEY_CODE_YES);
 
         /**
          * Ropy input-handler.
          */
-        if ( (isKey && c == KEY_ENTER) || (c == '\n' || c == '\r') )
+        if ( (isKeyCode && c == KEY_ENTER) || (c == '\n' || c == '\r') )
         {
             break;
         }
-        else if ( !isKey && g_unichar_isprint(c) )
+        else if ( !isKeyCode && g_unichar_isprint(c) )
         {
             /**
              * Insert the character into the buffer-string.
@@ -1254,18 +1256,18 @@ Glib::ustring CScreen::get_line()
             buffer = buffer.substr(0,pos);
         }
         else if ( ( c == 2 ) ||    /* ctrl-b : back char */
-                  (c == KEY_LEFT) )
+                  (isKeyCode && (c == KEY_LEFT)) )
         {
             if (pos > 0)
                 pos -= 1;
         }
         else if ( ( c == 6 ) || /* ctrl-f: forward char */
-                  (c == KEY_RIGHT) )
+                  (isKeyCode && (c == KEY_RIGHT)) )
         {
             if (pos < (int)buffer.size())
                 pos += 1;
         }
-        else if ( isKey && c == KEY_UP )
+        else if ( isKeyCode && c == KEY_UP )
         {
             hoff -= 1;
             if ( hoff >= 0 )
@@ -1278,7 +1280,7 @@ Glib::ustring CScreen::get_line()
                 hoff = 0;
             }
         }
-        else if ( isKey && c == KEY_DOWN )
+        else if ( isKeyCode && c == KEY_DOWN )
         {
             hoff += 1;
             if ( hoff < history->size() )
@@ -1291,7 +1293,7 @@ Glib::ustring CScreen::get_line()
                 hoff = history->size();
             }
         }
-        else if ( isKey && c == KEY_BACKSPACE )
+        else if ( isKeyCode && c == KEY_BACKSPACE )
         {
             if (pos > 0)
             {
