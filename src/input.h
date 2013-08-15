@@ -39,7 +39,6 @@ public:
     /**
      * Get a character from either our faux buffer, or via curses.
      */
-    int get_char();
     int get_wchar(gunichar *wch);
 
     /**

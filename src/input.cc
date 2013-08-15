@@ -65,40 +65,6 @@ void CInput::add( Glib::ustring input )
 
 /**
  * Get a character from either our faux buffer, or via curses.
- *
- * This is the old, non-Unicode version, here only for compatibility reasons.
- */
-int CInput::get_char()
-{
-    /**
-     * If we have pending history - return the next character from it.
-     */
-    if ( !m_pending.empty() )
-    {
-        /**
-         * If we've not walked off the end.
-         */
-        if ( m_offset < m_pending.size() )
-        {
-            /**
-             * Get the character and return it,
-             * updating our current-offset.
-             */
-            int c = m_pending.at( m_offset );
-            m_offset += 1;
-
-            return( c );
-        }
-    }
-
-    /**
-     * Otherwise defer to ncurses.
-     */
-    return( getch() );
-}
-
-/**
- * Get a character from either our faux buffer, or via curses.
  */
 int CInput::get_wchar(gunichar *wch)
 {
