@@ -285,6 +285,15 @@ std::vector<std::string> CGlobal::get_selected_folders()
 
 
 /**
+ * Get all selected messages.
+ */
+std::vector<std::string> CGlobal::get_selected_messages()
+{
+    return (m_selected_messages);
+}
+
+
+/**
  * Get folders matching the current mode.
  */
 std::vector<CMaildir *> CGlobal::get_folders()
@@ -545,6 +554,51 @@ bool CGlobal::remove_folder(std::string path)
 
 }
 
+/**
+ * Remove all selected messages.
+ */
+void CGlobal::unset_messages()
+{
+    m_selected_messages.clear();
+    assert( m_selected_messages.size() == 0 );
+}
+
+/**
+ * Add a message to the selected set.
+ */
+void CGlobal::add_message(std::string path)
+{
+    m_selected_messages.push_back(path);
+    assert( m_selected_messages.size() > 0 );
+}
+
+/**
+ * Remove a message from the selected set.
+ */
+bool CGlobal::remove_message(std::string path)
+{
+    std::vector<std::string>::iterator it;
+
+    /**
+     * Find the message.
+     */
+    it = std::find(m_selected_messages.begin(), m_selected_messages.end(), path);
+
+    /**
+     * If we found it remove it.
+     */
+    if (it != m_selected_messages.end())
+    {
+        m_selected_messages.erase(it);
+        return true;
+    }
+
+    /**
+     * Failed to find it.
+     */
+    return false;
+
+}
 
 /**
  * Get the value of the named string-variable.

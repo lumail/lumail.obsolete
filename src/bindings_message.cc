@@ -1281,3 +1281,199 @@ int message_offset(lua_State * L)
     lua_pushinteger(L, offset);
     return (1);
 }
+
+/**
+ * Add the given message to the selected set.
+ */
+int add_selected_message(lua_State * L)
+{
+    /**
+     * get the optional argument.
+     */
+    const char *str = lua_tostring(L, -1);
+
+    CGlobal *global = CGlobal::Instance();
+    CLua    *lua    = CLua::Instance();
+
+    /**
+     * The path that is being added.
+     */
+    std::string path;
+
+    /**
+     * default to the current message.
+     */
+    if (str == NULL)
+    {
+        int selected = global->get_selected_message();
+        std::vector<CMessage*>* display = global->get_messages();
+
+        if ( display->size()  == 0 )
+            return 0;
+
+        CMessage *x = display->at(selected);
+        path = x->path();
+        global->add_message(path.c_str());
+    }
+    else
+    {
+        path = std::string(str);
+        global->add_message(path);
+    }
+
+    global->set_selected_message(0);
+    global->update_messages();
+    global->set_message_offset(0);
+
+    if ( ! path.empty() )
+        lua->execute("on_message_selection(\"" + path + "\");");
+
+    return (0);
+}
+
+
+/**
+ * Clear all currently selected messages.
+ */
+int clear_selected_messages(lua_State * L)
+{
+    CGlobal *global = CGlobal::Instance();
+    global->unset_messages();
+    global->set_selected_message(0);
+    global->update_messages();
+    global->set_message_offset(0);
+
+
+    /**
+     * Call our update with an empty path.
+     */
+    CLua *lua = CLua::Instance();
+    lua->execute("on_message_selection(\"\");");
+
+    return 0;
+}
+
+
+/**
+ * Get the currently selected messages.
+ */
+int selected_messages(lua_State * L)
+{
+    CGlobal *global = CGlobal::Instance();
+    std::vector<std::string> selected = global->get_selected_messages();
+    std::vector<std::string>::iterator it;
+
+    /**
+     * Create the table.
+     */
+    lua_newtable(L);
+
+    int i = 1;
+    for (it = selected.begin(); it != selected.end(); ++it)
+    {
+        lua_pushnumber(L,i);
+        lua_pushstring(L,(*it).c_str());
+        lua_settable(L,-3);
+        i++;
+    }
+
+    return 1;
+}
+
+
+/**
+ * Remove all currently selected messages.  Add single new one.
+ */
+int set_selected_message(lua_State * L)
+{
+    /**
+     * get the optional argument.
+     */
+    const char *str = lua_tostring(L, -1);
+
+    CGlobal *global = CGlobal::Instance();
+    global->unset_messages();
+
+    /**
+     * The path we're adding.
+     */
+    std::string path;
+
+    /**
+     * default to the current message.
+     */
+    if (str == NULL)
+    {
+        std::vector<CMessage *> *display = global->get_messages();
+        int selected = global->get_selected_message();
+
+        CMessage *x = display->at(selected);
+        path = x->path();
+        global->add_message(path.c_str());
+    }
+    else
+    {
+        path = std::string(str);
+        global->add_message(path.c_str());
+    }
+
+    global->update_messages();
+    global->set_message_offset(0);
+
+    if ( ! path.empty() )
+    {
+        CLua *lua = CLua::Instance();
+        lua->execute("on_message_selection(\"" + path + "\");");
+    }
+
+    return (0);
+}
+
+
+/**
+ * Toggle the selection state of the currently selected message.
+ */
+int toggle_selected_message(lua_State * L)
+{
+    /**
+     * get the optional argument.
+     */
+    const char *str = lua_tostring(L, -1);
+    CGlobal *global = CGlobal::Instance();
+    std::vector < std::string > smessages = global->get_selected_messages();
+
+    /**
+     * default to the current message.
+     */
+    std::string toggle;
+
+    if (str == NULL)
+    {
+        std::vector<CMessage *>* display = global->get_messages();
+        if ( display->size()  == 0 )
+            return 0;
+
+        int selected = global->get_selected_message();
+        CMessage *x = display->at(selected);
+        toggle = x->path();
+    }
+    else
+    {
+        toggle = std::string(str);
+    }
+
+    if (std::find(smessages.begin(), smessages.end(), toggle) != smessages.end())
+        global->remove_message(toggle);
+    else
+        global->add_message(toggle);
+
+    global->update_messages();
+    global->set_message_offset(0);
+
+    if ( ! toggle.empty() )
+    {
+        CLua *lua = CLua::Instance();
+        lua->execute("on_message_selection(\"" + toggle + "\");");
+    }
+    return (0);
+}

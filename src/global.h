@@ -67,6 +67,11 @@ public:
     std::vector<std::string> get_selected_folders();
 
     /**
+     * Get all selected messages:
+     */
+    std::vector<std::string> get_selected_messages();
+
+    /**
      * Get all messages from the currently-selected folders.
      */
     std::vector<CMessage *> * get_messages();
@@ -101,6 +106,23 @@ public:
      */
     bool remove_folder(std::string path);
 
+
+    /**
+     * Remove all selected messages.
+     */
+    void unset_messages();
+
+
+    /**
+     * Add a message to the selected set.
+     */
+    void add_message(std::string path);
+
+
+    /**
+     * Remove a message from the selected set.
+     */
+    bool remove_message(std::string path);
 
     /**
      * Get/set the selected folder, i.e. the one with the highlight.
@@ -211,6 +233,11 @@ private:
      * Currently selected folders.
      */
     std::vector < std::string > m_selected_folders;
+
+    /**
+     * Currently selected messages.
+     */
+    std::vector < std::string > m_selected_messages;
 
     /**
      * The list of currently visible messages.
