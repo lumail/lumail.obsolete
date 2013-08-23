@@ -69,7 +69,7 @@ public:
     /**
      * Format the message for display in the header - via the Lua format string.
      */
-    UTFString format( std::string fmt = "");
+    UTFString format( bool selected, std::string fmt = "");
 
     /**
      * Get the flags for this message.

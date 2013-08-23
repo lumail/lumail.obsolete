@@ -475,7 +475,7 @@ bool CMessage::matches_filter( std::string *filter )
      * OK now we're falling back to matching against the formatted version
      * of the message - as set by `index_format`.
      */
-    std::string formatted = format();
+    std::string formatted = format(false);
 
     /**
      * Regexp Matching.
@@ -594,7 +594,7 @@ bool CMessage::mark_unread()
 /**
  * Format the message for display in the header - via the lua format string.
  */
-UTFString CMessage::format( std::string fmt )
+UTFString CMessage::format( bool selected, std::string fmt )
 {
     UTFString result = fmt;
 
@@ -651,10 +651,14 @@ UTFString CMessage::format( std::string fmt )
             }
             if ( strcmp(std_name[i] , "FLAGS" ) == 0 )
             {
+                if ( selected )
+                    body = "<X> ";
+                else
+                    body = "< > ";
                 /**
                  * Ensure the flags are suitably padded.
                  */
-                body = flags();
+                body += flags();
 
                 while( body.size() < 4 )
                     body += " ";
