@@ -642,17 +642,17 @@ UTFString CMessage::field_value(std::string field)
  */
 UTFString CMessage::format( std::string fmt )
 {
-    UTFString result = fmt;
+    UTFString result = "";
 
     /**
      * Get the format-string we'll expand from the global
      * setting, if it wasn't supplied.
      */
-    if ( result.empty() )
+    if ( fmt.empty() )
     {
         CGlobal *global  = CGlobal::Instance();
-        std::string *fmt = global->get_variable("index_format");
-        result = std::string(*fmt);
+        std::string *format = global->get_variable("index_format");
+        fmt = std::string(*format);
     }
 
     /**
@@ -664,7 +664,7 @@ UTFString CMessage::format( std::string fmt )
 
     regex_options.set_utf8(true);
 
-    pcrecpp::RE vars( "(.*?)\\$([a-zA-Z]+)\\{(.*?)\\}", regex_options);
+    pcrecpp::RE vars( "(.*?)\\$([a-zA-Z]+)(\\{.*?\\})?", regex_options);
 
     /* For each token : 
      *   - beg is the part before the var
@@ -675,7 +675,8 @@ UTFString CMessage::format( std::string fmt )
     {
         int min = -1;
         int max = -1;
-        const size_t match_len = 1 + var.length() + 1 + spec.length() + 1;
+        /** Len = '$' + var + (optional) spec */
+        const size_t match_len = 1 + var.length() +  spec.length();
         std::string color;
 
         cur_pos += beg.length() + match_len;
