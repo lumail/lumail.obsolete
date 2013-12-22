@@ -692,7 +692,7 @@ UTFString CMessage::format( std::string fmt )
         /*if ( color != "" )
             color = m_colours[color];*/
 
-        std::string value = field_value(var);
+        UTFString value = field_value(var);
 
         if (color != "")
             result += color;
