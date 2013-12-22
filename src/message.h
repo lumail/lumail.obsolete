@@ -250,6 +250,12 @@ private:
      */
     std::string m_path;
 
+    /**
+     * String representation of different fields
+     * for formatting
+     */
+    UTFString field_value(std::string field);
+
 
     /**
      * Cached time/date object.

@@ -528,6 +528,116 @@ bool CMessage::mark_unread()
 
 
 /**
+ * Get value from specification.
+ * For example :
+ * get_spec("color:red min:10", "min") will return "10"
+ */
+std::string get_spec(const std::string spec, const std::string fieldname)
+{
+    const size_t fld_len = fieldname.length()+1;
+    size_t fldpos;
+    std::string res;
+
+    fldpos = spec.find(fieldname+":");
+
+    /** Make sure we have a real field definition */
+    if ( fldpos != std::string::npos && fldpos+fld_len < spec.length() )
+    {
+        size_t fldend;
+
+        /** skip "field:" */
+        fldend = fldpos + fld_len;
+
+        while ( fldend < spec.length() && isalnum(spec[fldend++]) );
+        if (fldend != spec.length() ) fldend--;
+
+        res = spec.substr(fldpos+fld_len, fldend-fldpos-fld_len);
+    }
+
+    return res;
+}
+
+/**
+ * Parse a width spec, relative to screen width if needed
+ */
+int get_width(const std::string spec, const std::string fieldname, const size_t scr_width)
+{
+    
+    std::string t;
+    int val = -1;
+
+    t = get_spec(spec, fieldname);
+    if ( t != "")
+    {
+        if (t.back() == '%')
+            val = atoi(t.c_str())*scr_width/100;
+        else
+            val = atoi(t.c_str());
+    }
+
+    return val;
+}
+
+
+UTFString CMessage::field_value(std::string field)
+{
+    /**
+     * The variables we know about.
+     */
+    UTFString result = "";
+
+    /**
+     * Expand the specific variables.
+     */
+    if ( field == "TO" )
+    {
+        return header( "To" );
+    }
+    if ( field == "DATE" )
+    {
+        return date();
+    }
+    if ( field == "FROM" )
+    {
+        return header( "From" );
+    }
+    if ( field == "FLAGS" )
+    {
+        /**
+         * Ensure the flags are suitably padded.
+         */
+        result = get_flags();
+
+        while( result.size() < 4 )
+            result += " ";
+
+        return result;
+    }
+    if ( field == "SUBJECT" )
+    {
+        return header( "Subject" );
+    }
+    if ( field == "YEAR" )
+    {
+        return date(EYEAR);
+    }
+    if ( field == "MONTH" )
+    {
+        return date(EMONTH);
+    }
+    if ( field == "MON" )
+    {
+        return date(EMON);
+    }
+    if ( field == "DAY" )
+    {
+        return date(EDAY);
+    }
+
+    return result;
+}
+
+/**
  * Format the message for display in the header - via the lua format string.
  */
 UTFString CMessage::format( std::string fmt )
@@ -546,92 +656,67 @@ UTFString CMessage::format( std::string fmt )
     }
 
     /**
-     * The variables we know about.
+     * Split into the token and the optional arguments.
      */
-    const char *fields[10] = { "FLAGS", "FROM", "TO", "SUBJECT",  "DATE", "YEAR", "MONTH", "MON", "DAY", 0 };
-    const char **std_name = fields;
+    pcrecpp::RE_Options regex_options;
+    std::string var, beg, spec;
+    size_t cur_pos = 0;
 
+    regex_options.set_utf8(true);
 
-    /**
-     * Iterate over everything we could possibly-expand.
+    pcrecpp::RE vars( "(.*?)\\$([a-zA-Z]+)\\{(.*?)\\}", regex_options);
+
+    /* For each token : 
+     *   - beg is the part before the var
+     *   - var is the variable name
+     *   - spec is the part between {}
      */
-    for( int i = 0 ; std_name[i] ; ++i)
+    while( vars.PartialMatch(fmt, &beg, &var, &spec) )
     {
+        int min = -1;
+        int max = -1;
+        const size_t match_len = 1 + var.length() + 1 + spec.length() + 1;
+        std::string color;
 
-        size_t offset = result.find( std_name[i], 0 );
+        cur_pos += beg.length() + match_len;
 
-        if ( ( offset != std::string::npos ) && ( offset < result.size() ) )
+        /* Keep the beginning */
+        result += beg;
+        fmt.erase(0, beg.length()+match_len);
+
+        min = get_width(spec, "min", 80);
+        max = get_width(spec, "max", 80);
+
+        color = get_spec(spec, "color");
+        /*if ( color != "" )
+            color = m_colours[color];*/
+
+        std::string value = field_value(var);
+
+        if (color != "")
+            result += color;
+
+        /* Make sure min is not greater than max */
+        if (max > 0 && min > max)
+            min = max;
+
+        /* Length logic :
+        * -1 means "Use string length"
+        */
+        std::string fitstr;
+        if (min > 0 and (int)value.length() < min )
         {
-
-            /**
-             * The bit before the variable, the bit after, and the body we'll replace it with.
-             */
-            std::string before = result.substr(0,offset-1);
-            std::string body = "";
-            std::string after  = result.substr(offset+strlen(std_name[i]));
-
-            /**
-             * Expand the specific variables.
-             */
-            if ( strcmp(std_name[i] , "TO" ) == 0 )
-            {
-                body = header( "To" );
-            }
-            if ( strcmp(std_name[i] , "DATE" ) == 0 )
-            {
-                body = date();
-            }
-            if ( strcmp(std_name[i] , "FROM" ) == 0 )
-            {
-                body += header( "From" );
-            }
-            if ( strcmp(std_name[i] , "FLAGS" ) == 0 )
-            {
-                /**
-                 * Ensure the flags are suitably padded.
-                 */
-                body = get_flags();
-
-                while( body.size() < 4 )
-                    body += " ";
-            }
-            if ( strcmp(std_name[i] , "SUBJECT" ) == 0 )
-            {
-                body = header( "Subject" );
-            }
-            if ( strcmp(std_name[i],  "YEAR" ) == 0 )
-            {
-                body = date(EYEAR);
-            }
-            if ( strcmp(std_name[i],  "MONTH" ) == 0 )
-            {
-                body = date(EMONTH);
-            }
-            if ( strcmp(std_name[i],  "MON" ) == 0 )
-            {
-                body = date(EMON);
-            }
-            if ( strcmp(std_name[i],  "DAY" ) == 0 )
-            {
-                body = date(EDAY);
-            }
-
-            result = before + body + after;
-        }
+            fitstr =  value + std::string(min-value.length(), ' ');
+        } else  if ( (int)value.length() > max )
+                {
+                    fitstr = value.substr(0, max);
+                }
+                else
+                    fitstr = value;
+        result += fitstr;
     }
 
-    /**
-     * If the value is still unchanged ..
-     */
-    if ( result.size() > 1 && result.at(0) == '$' )
-    {
-        /**
-         * See if it is header value we can find.
-         */
-        result = header( result.substr(1) );
-        if ( result.empty() )
-            result = "[unset]";
-    }
+    result += fmt;
 
     return( result );
 }
