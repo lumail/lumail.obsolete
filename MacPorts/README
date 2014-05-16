@@ -1,0 +1,11 @@
+See http://guide.macports.org/ for how to use the Portfile correctly.
+The TL;DR version is below.
+
+Edit $prefix/etc/macports/sources.conf,
+adding a file:/// URL pointed at this MacPorts subdirectory.
+Then:
+  cd MacPorts/ports; portindex
+  port selfupdate
+
+If 'port info lumail' gives something interesting,
+try 'port install lumail'.
