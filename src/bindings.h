@@ -107,6 +107,8 @@ int scroll_message_to(lua_State *L);
 int scroll_message_up(lua_State *L);
 int send_email(lua_State *L);
 
+bool push_message(lua_State *L, std::shared_ptr<CMessage> message);
+bool push_message_list(lua_State *L, const std::vector<std::shared_ptr<CMessage> > &messages);
 
 /**
  * bindings_mime.cc:

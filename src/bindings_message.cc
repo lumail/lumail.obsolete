@@ -1738,4 +1738,137 @@ int send_email(lua_State *L)
     return 0;
 }
 
+/**
+ * Delete the Message pointer
+ */
+static int message_mt_gc(lua_State *L)
+{
+    void *ud = luaL_checkudata(L, 1, "message_mt");
+    if (ud)
+    {
+        std::shared_ptr<CMessage> *ud_message = static_cast<std::shared_ptr<CMessage> *>(ud);
+        
+        /* Call the destructor */
+        ud_message->~shared_ptr<CMessage>();
+    }
+    return 0;
+}
+
+/**
+ * Verify that an item on the Lua stack is a wrapped CMessage, and return
+ * a (shared) pointer to it of so.
+ *
+ * Returns NULL otherwise.
+ */
+static std::shared_ptr<CMessage> check_message(lua_State *L, int index)
+{
+    void *ud = luaL_checkudata(L, index, "message_mt");
+    if (ud)
+    {
+        /* Return a copy of the pointer */
+        return *(static_cast<std::shared_ptr<CMessage> *>(ud));
+    }
+    else
+    {
+        /* Invalid, so return a null pointer */
+        return NULL;
+    }
+}
+
+/**
+ * Read message fields
+ */
+static int message_mt_index(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        const char *name = luaL_checkstring(L, 2);
+        if (strcmp(name, "path") == 0)
+        {
+            lua_pushstring(L, message->path().c_str());
+            return 1;
+        }
+        else if (strcmp(name, "is_new") == 0)
+        {
+            lua_pushboolean(L, message->is_new());
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * The message metatable entries.
+ */
+static const luaL_Reg message_mt_fields[] = {
+    { "__index", message_mt_index },
+    { "__gc",    message_mt_gc },
+    { NULL, NULL },  /* Terminator */
+};
+
+/**
+ * Push the message metatable onto the Lua stack, creating it if needed.
+ */
+static void push_message_mt(lua_State *L)
+{
+    int created = luaL_newmetatable(L, "message_mt");
+    if (created)
+    {
+        /* A new table was created, set it up now. */
+        luaL_register(L, NULL, message_mt_fields);
+    }
+}
+
+/**
+ * Push a message onto the Lua stack as a userdata.
+ *
+ * Returns true on success.
+ */
+bool push_message(lua_State *L, std::shared_ptr<CMessage> message)
+{
+    void *ud = lua_newuserdata(L, sizeof(std::shared_ptr<CMessage>));
+    if (!ud)
+        return false;
+    
+    /* Construct a blank shared_ptr.  To be safe, make sure it's a valid
+     * object before setting the metatable. */
+    std::shared_ptr<CMessage> *ud_message = new (ud) std::shared_ptr<CMessage>();
+    if (!ud_message)
+    {
+        /* Discard the userdata */
+        lua_pop(L, 1);
+        return false;
+    }
+    
+    /* FIXME: check errors */
+    push_message_mt(L);
+    
+    lua_setmetatable(L, -2);
+    
+    /* And now store the maildir pointer into the userdata */
+    *ud_message = message;
+    
+    return true;
+}
+
+/**
+ * Push a vector of CMessages onto the Lua stack as a table.
+ *
+ * Returns true on success.
+ */
+bool push_message_list(lua_State *L,
+                       const std::vector<std::shared_ptr<CMessage> > &messages)
+{
+    lua_createtable(L, messages.size(), 0);
+    for (size_t i=0; i<messages.size(); ++i)
+    {
+        if (!push_message(L, messages[i]))
+            return false;
+        
+        /* Add to the table. */
+        lua_rawseti(L, -2, i+1);
+    }
+    return true;
+}
 
