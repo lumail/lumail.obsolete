@@ -1,3 +1,49 @@
+lumail (0.26) stable; urgency=low
+
+  * New release, fixing several bugs.
+  * References here are to the Github repository issue tracker:
+    https://github.com/skx/lumail/issues
+
+    #182 - Test that the Lua stack contains strings before fetching them.
+    #183 - Added an on_error callback, such that Lua errors can be caught.
+           http://lumail.org/lua/on_error.html
+    #184 - Support 'destdir' in the Makefile for easier personal installation.
+    #185 - Support 'destdir' in the Makefile for easier personal installation.
+
+    #186 - The display of inline-parts is now possible.
+
+    #191 - Documentation update regarding sendmail-selection.
+    #192 - Documentation update regarding sendmail-selection.
+
+    #194 - The `wrap` primitive now wraps long-headers too.
+
+    #196 - Avoid recursive string expansion in header-values.
+
+    #202 - Allow multiple maildir prefixes to be specified
+
+    #209 - Avoid updating maildirs unnecessarily.
+
+    #210 - Two new primitives for text-mode control:
+              jump_text_to
+              text_offset
+
+    #218 - Added .signature when forwarding a message.
+
+    #219 - Add space after 'Fwd' prefix when forwarding a message.
+
+    #223 - Fixed regression with assertions from GMIME, relating to
+           the boolean variable "view_inline_attachments".
+
+  * CHANGE: lumailctl honours --version now.
+  * New boolean: show_attachments, controls whether attachments are drawn.
+    http://lumail.org/lua/show_attachments.html
+  * New boolean: view_inline_attachments
+    http://lumail.org/lua/view_inline_attachments.html
+  * New primitive, attachment, returns the content of the specified attachment.
+    http://lumail.org/lua/show_attachments.html
+
+ -- Steve Kemp <steve@steve.org.uk>  Wed, 16 May 2014 18:33:18 +0000
+
 lumail (0.25) stable; urgency=low
 
   * New release, fixing several bugs.
