@@ -606,7 +606,7 @@ UTFString CMessage::format( std::string fmt )
     /**
      * The variables we know about.
      */
-    const char *fields[10] = { "FLAGS", "FROM", "TO", "SUBJECT",  "DATE", "YEAR", "MONTH", "MON", "DAY", 0 };
+    const char *fields[10] = { "$FLAGS", "$FROM", "$TO", "$SUBJECT",  "$DATE", "$YEAR", "$MONTH", "$MON", "$DAY", 0 };
     const char **std_name = fields;
 
 
@@ -631,19 +631,19 @@ UTFString CMessage::format( std::string fmt )
             /**
              * Expand the specific variables.
              */
-            if ( strcmp(std_name[i] , "TO" ) == 0 )
+            if ( strcmp(std_name[i] , "$TO" ) == 0 )
             {
                 body = header( "To" );
             }
-            if ( strcmp(std_name[i] , "DATE" ) == 0 )
+            if ( strcmp(std_name[i] , "$DATE" ) == 0 )
             {
                 body = date();
             }
-            if ( strcmp(std_name[i] , "FROM" ) == 0 )
+            if ( strcmp(std_name[i] , "$FROM" ) == 0 )
             {
                 body += header( "From" );
             }
-            if ( strcmp(std_name[i] , "FLAGS" ) == 0 )
+            if ( strcmp(std_name[i] , "$FLAGS" ) == 0 )
             {
                 /**
                  * Ensure the flags are suitably padded.
@@ -653,23 +653,23 @@ UTFString CMessage::format( std::string fmt )
                 while( body.size() < 4 )
                     body += " ";
             }
-            if ( strcmp(std_name[i] , "SUBJECT" ) == 0 )
+            if ( strcmp(std_name[i] , "$SUBJECT" ) == 0 )
             {
                 body = header( "Subject" );
             }
-            if ( strcmp(std_name[i],  "YEAR" ) == 0 )
+            if ( strcmp(std_name[i],  "$YEAR" ) == 0 )
             {
                 body = date(EYEAR);
             }
-            if ( strcmp(std_name[i],  "MONTH" ) == 0 )
+            if ( strcmp(std_name[i],  "$MONTH" ) == 0 )
             {
                 body = date(EMONTH);
             }
-            if ( strcmp(std_name[i],  "MON" ) == 0 )
+            if ( strcmp(std_name[i],  "$MON" ) == 0 )
             {
                 body = date(EMON);
             }
-            if ( strcmp(std_name[i],  "DAY" ) == 0 )
+            if ( strcmp(std_name[i],  "$DAY" ) == 0 )
             {
                 body = date(EDAY);
             }
