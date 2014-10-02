@@ -624,7 +624,7 @@ UTFString CMessage::format( std::string fmt )
             /**
              * The bit before the variable, the bit after, and the body we'll replace it with.
              */
-            std::string before = result.substr(0,offset-1);
+            std::string before = result.substr(0, offset);
             std::string body = "";
             std::string after  = result.substr(offset+strlen(std_name[i]));
 
