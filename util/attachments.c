@@ -320,7 +320,6 @@ int main( int argc, char *argv[] )
         /**
          * Iterate over each detected attachment.
          */
-        std::vector<CAttachment>::iterator it;
         int c = 0;
         for (CAttachment *cur : result)
         {
@@ -332,7 +331,7 @@ int main( int argc, char *argv[] )
                       << std::endl;
 
 
-            fprintf(stderr, "PART %d: %s\n", c , cur->body() );
+            fprintf(stderr, "PART %d: %s\n", c , (char *)cur->body() );
             c += 1;
             delete(cur);
         }

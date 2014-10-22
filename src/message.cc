@@ -77,7 +77,6 @@ CMessage::~CMessage()
      */
     if ( m_attachments.size() > 0 )
     {
-        std::vector<CAttachment*>::iterator it;
         for (CAttachment *cur : m_attachments)
         {
             DEBUG_LOG( "Deleting attachment object: " + cur->name() );
@@ -1439,8 +1438,6 @@ std::vector<std::string> CMessage::attachments()
     if ( m_attachments.empty() )
         parse_attachments();
 
-
-    std::vector<CAttachment>::iterator it;
     for (CAttachment *cur : m_attachments)
     {
         paths.push_back( cur->name() );
