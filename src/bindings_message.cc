@@ -1484,25 +1484,15 @@ int save_message( lua_State *L )
         return( 0 );
     }
 
-    /**
-     * Got a message ?
+    /*
+     * Actually copy the message.
      */
-    std::string source = msg->path();
-
-    /**
-     * The new path.
-     */
-    std::string dest = CMaildir::message_in( str, ( msg->is_new() ) );
-
-    /**
-     * Copy from source to destination.
-     */
-    CFile::copy( source, dest );
-
+    msg->copy(str);
+    
     /**
      * Remove source.
      */
-    CFile::delete_file( source.c_str() );
+    msg->delete_msg();
 
     /**
      * Update messages
@@ -1775,6 +1765,60 @@ static std::shared_ptr<CMessage> check_message(lua_State *L, int index)
     }
 }
 
+static int message_mt_path(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushstring(L, message->path().c_str());
+        return 1;
+    }
+    return 0;
+}
+
+static int message_mt_is_new(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushboolean(L, message->is_new());
+        return 1;
+    }
+    return 0;
+}
+
+static int message_mt_flags(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushstring(L, message->get_flags().c_str());
+        return 1;
+    }
+    return 0;
+}
+
+static int message_mt_copy(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        const char *destdir = luaL_checkstring(L, 2);
+        message->copy(destdir);
+    }
+    return 0;
+}
+
+static int message_mt_delete(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        message->delete_msg();
+    }
+    return 0;
+}
+
 /**
  * Read message fields
  */
@@ -1804,6 +1848,11 @@ static int message_mt_index(lua_State *L)
 static const luaL_Reg message_mt_fields[] = {
     { "__index", message_mt_index },
     { "__gc",    message_mt_gc },
+    { "path",    message_mt_path },
+    { "is_new",  message_mt_is_new },
+    { "flags",   message_mt_flags },
+    { "copy",    message_mt_copy },
+    { "delete",  message_mt_delete },
     { NULL, NULL },  /* Terminator */
 };
 
@@ -1817,6 +1866,10 @@ static void push_message_mt(lua_State *L)
     {
         /* A new table was created, set it up now. */
         luaL_register(L, NULL, message_mt_fields);
+        
+        /* Set itself as its __index */
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -2, "__index");
     }
 }
 

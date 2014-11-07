@@ -33,6 +33,7 @@
 #include "global.h"
 #include "lua.h"
 #include "message.h"
+#include "maildir.h"
 #include "utfstring.h"
 
 
@@ -218,6 +219,33 @@ void CMessage::path( std::string new_path )
     close_message();
 }
 
+
+/**
+ * Copy this message to a different maildir.
+ */
+void CMessage::copy ( const char *destdir )
+{
+    /* Get the source path */
+    std::string source = path();
+
+    /**
+     * The new path.
+     */
+    std::string dest = CMaildir::message_in( destdir, is_new() );
+
+    /**
+     * Copy from source to destination.
+     */
+    CFile::copy( source, dest );
+}
+
+/**
+ * Remove this message.
+ */
+void CMessage::delete_msg()
+{
+    CFile::delete_file( path() );
+}
 
 /**
  * Retrieve the current flags for this message.
