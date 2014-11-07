@@ -980,29 +980,30 @@ void CScreen::setup()
     noecho();
     curs_set(0);
     timeout(1000);
+    use_default_colors();
 
     /**
      * We want (red + black) + (white + black)
      */
-    init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(1, COLOR_RED, -1);
     m_colours[ "red"  ] = 1;
 
-    init_pair(2, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_WHITE, -1);
     m_colours[ "white" ] = 2;
 
-    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, -1);
     m_colours[ "blue" ] = 3;
 
-    init_pair(4, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_GREEN, -1);
     m_colours[ "green" ] = 4;
 
-    init_pair(5, COLOR_CYAN, COLOR_BLACK);
+    init_pair(5, COLOR_CYAN, -1);
     m_colours[ "cyan" ] = 5;
 
-    init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(6, COLOR_MAGENTA, -1);
     m_colours[ "magenta" ] = 6;
 
-    init_pair(7, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(7, COLOR_YELLOW, -1);
     m_colours[ "yellow" ] = 7;
 
     init_pair(8, COLOR_BLACK, COLOR_WHITE);
