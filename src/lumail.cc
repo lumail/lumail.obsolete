@@ -285,6 +285,15 @@ void CLumail::run_event_loop()
     {
 
         /**
+         * Refresh the screen.
+         *
+         * This is placed here to avoid having to wait for the
+         * on_idle callback to complete, which could stall updates.
+         */
+        m_screen->refresh_display();
+
+
+        /**
          * Do we have a domain-socket?
          */
         CGlobal *global = CGlobal::Instance();
@@ -327,9 +336,6 @@ void CLumail::run_event_loop()
                 m_lua->execute(foo);
             }
         }
-
-
-        m_screen->refresh_display();
     }
 
 }
