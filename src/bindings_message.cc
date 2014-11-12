@@ -755,18 +755,13 @@ int current_message(lua_State * L)
     }
 
     /**
-     * If that succeeded store the path.
+     * If that succeeded push it onto the Lua stack.
      */
-    std::string source = msg->path();
-    if ( !source.empty() )
-    {
-        lua_pushstring(L, source.c_str());
-        return(1);
-    }
-    else
+    if (!push_message(L, msg))
     {
         return 0;
     }
+    return 1;
 }
 
 
@@ -1787,7 +1782,7 @@ static int message_mt_is_new(lua_State *L)
     return 0;
 }
 
-static int message_mt_flags(lua_State *L)
+static int message_mt_get_flags(lua_State *L)
 {
     std::shared_ptr<CMessage> message = check_message(L, 1);
     if (message)
@@ -1796,6 +1791,76 @@ static int message_mt_flags(lua_State *L)
         return 1;
     }
     return 0;
+}
+
+static int message_mt_set_flags(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flags = luaL_checkstring(L, 2);
+    if (!new_flags)
+    {
+        return luaL_error(L, "Invalid flags: expected string.");
+    }
+    message->set_flags(new_flags);
+    return 0;
+}
+
+static int message_mt_add_flag(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flag = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!new_flag || !new_flag[0] || new_flag[1])
+    {
+        return luaL_error(L, "Invalid flags: expected of length 1.");
+    }
+    bool result = message->add_flag(new_flag[0]);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+static int message_mt_has_flag(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flag = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!new_flag || !new_flag[0] || new_flag[1])
+    {
+        return luaL_error(L, "Invalid flags: expected of length 1.");
+    }
+    bool result = message->has_flag(new_flag[0]);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+static int message_mt_remove_flag(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flag = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!new_flag || !new_flag[0] || new_flag[1])
+    {
+        return luaL_error(L, "Invalid flags: expected of length 1.");
+    }
+    bool result = message->remove_flag(new_flag[0]);
+    lua_pushboolean(L, result);
+    return 1;
 }
 
 static int message_mt_copy(lua_State *L)
@@ -1850,7 +1915,11 @@ static const luaL_Reg message_mt_fields[] = {
     { "__gc",    message_mt_gc },
     { "path",    message_mt_path },
     { "is_new",  message_mt_is_new },
-    { "flags",   message_mt_flags },
+    { "get_flags", message_mt_get_flags },
+    { "set_flags", message_mt_set_flags },
+    { "add_flag", message_mt_add_flag },
+    { "has_flag", message_mt_has_flag },
+    { "remove_flag", message_mt_remove_flag },
     { "copy",    message_mt_copy },
     { "delete",  message_mt_delete },
     { NULL, NULL },  /* Terminator */
