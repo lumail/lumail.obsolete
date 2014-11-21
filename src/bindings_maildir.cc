@@ -473,7 +473,7 @@ static void push_maildir_mt(lua_State *L)
     if (created)
     {
         /* A new table was created, set it up now. */
-        luaL_register(L, NULL, maildir_mt_fields);
+        CLua::reg_funcs(L, maildir_mt_fields);
     }
 }
 
@@ -538,7 +538,7 @@ bool push_maildir_list(lua_State *L,
 CMaildirList check_maildir_list(lua_State *L, int index)
 {
     CMaildirList result;
-    size_t size = lua_objlen(L, index);
+    size_t size = CLua::len(L, index);
     for (size_t i=1; i<=size; ++i)
     {
         std::shared_ptr<CMaildir> md;
