@@ -206,6 +206,22 @@ public:
     std::vector<std::shared_ptr<CMaildir> > call_maildirs(const char *name,
                                                           const std::vector<std::shared_ptr<CMaildir> > &maildirs);
 
+/**
+ ** Static helper methods.
+ **/
+ 
+    /**
+     * Register all the functions in funcs (up to a NULL, NULL sentinel)
+     * into the table at the top of the Lua stack.
+     */
+    static void reg_funcs(lua_State *L, const luaL_Reg *funcs);
+    
+    /**
+     * Return the length of the Lua value at a given index on the Lua
+     * stack (not using any metamethods).
+     */
+    static size_t len(lua_State *L, int index);
+
 protected:
 
     /**

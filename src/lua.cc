@@ -912,3 +912,25 @@ CMaildirList CLua::call_maildirs(const char *name,
     return check_maildir_list(m_lua, -1);
 }
 
+
+void CLua::reg_funcs(lua_State *L, const luaL_Reg *funcs)
+{
+#if LUA_VERSION_NUM == 501
+    luaL_register(L, NULL, funcs);
+#elif LUA_VERSION_NUM == 502
+    luaL_setfuncs(L, funcs, 0);
+#else
+#error unsupported Lua version
+#endif
+}
+
+size_t CLua::len(lua_State *L, int index)
+{
+#if LUA_VERSION_NUM == 501
+    return lua_objlen(L, index);
+#elif LUA_VERSION_NUM == 502
+    return lua_rawlen(L, index);
+#else
+#error unsupported Lua version
+#endif
+}
