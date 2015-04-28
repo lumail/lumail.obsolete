@@ -1884,6 +1884,24 @@ static int message_mt_delete(lua_State *L)
     return 0;
 }
 
+static int message_mt_header(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *header_name = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!header_name)
+    {
+        return luaL_error(L, "Invalid header name.");
+    }
+    std::string result = message->header(header_name);
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+
 /**
  * Read message fields
  */
@@ -1922,6 +1940,33 @@ static const luaL_Reg message_mt_fields[] = {
     { "remove_flag", message_mt_remove_flag },
     { "copy",    message_mt_copy },
     { "delete",  message_mt_delete },
+    { "header",  message_mt_header },
+#if 0
+all_headers
+attachment
+attachments
+body
+bounce
+count_attachments
+count_body_parts
+count_lines
+delete
+forward
+get_body_part
+get_body_parts
+has_body_part
+mail_filter
+mark_read
+mark_unread
+message_offset
+on_delete_message?
+on_get_body?
+on_read_message?
+reply
+save
+save_attachment
+scroll_message_down/up/to?
+#endif
     { NULL, NULL },  /* Terminator */
 };
 
@@ -1994,3 +2039,25 @@ bool push_message_list(lua_State *L,
     return true;
 }
 
+/**
+ * Verify that an item on the Lua stack is a table of CMessage, and return
+ * this table converted back to a std::vector if so.
+ *
+ * Returns an empty vector otherwise.
+ */
+CMessageList check_message_list(lua_State *L, int index)
+{
+    CMessageList result;
+    size_t size = CLua::len(L, index);
+    for (size_t i=1; i<=size; ++i)
+    {
+        std::shared_ptr<CMessage> md;
+        lua_rawgeti(L, index, i);
+        md = check_message(L, -1);
+        /* Ignore anything that isn't a CMessage */
+        if (md)
+            result.push_back(check_message(L, -1));
+        lua_pop(L, 1);
+    }
+    return result;
+}
