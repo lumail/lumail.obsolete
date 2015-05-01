@@ -1902,6 +1902,19 @@ static int message_mt_header(lua_State *L)
     return 1;
 }
 
+static int message_mt_get_date_field(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    time_t result = message->get_date_field();
+    lua_pushnumber(L, result);
+
+    return 1;
+}
+
 /**
  * Read message fields
  */
@@ -1941,6 +1954,7 @@ static const luaL_Reg message_mt_fields[] = {
     { "copy",    message_mt_copy },
     { "delete",  message_mt_delete },
     { "header",  message_mt_header },
+    { "get_date_field", message_mt_get_date_field },
 #if 0
 all_headers
 attachment
