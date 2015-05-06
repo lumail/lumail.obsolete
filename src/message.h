@@ -70,6 +70,11 @@ public:
     void path( std::string new_path );
 
     /**
+     * Return the size of the message on disk.
+     */
+    size_t filesize();
+
+    /**
      * Copy this message to a different maildir.
      */
     void copy( const char *destdir );

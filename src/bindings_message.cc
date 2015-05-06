@@ -1771,6 +1771,17 @@ static int message_mt_path(lua_State *L)
     return 0;
 }
 
+static int message_mt_filesize(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushinteger(L, message->filesize());
+        return 1;
+    }
+    return 0;
+}
+
 static int message_mt_is_new(lua_State *L)
 {
     std::shared_ptr<CMessage> message = check_message(L, 1);
@@ -1945,6 +1956,7 @@ static const luaL_Reg message_mt_fields[] = {
     { "__index", message_mt_index },
     { "__gc",    message_mt_gc },
     { "path",    message_mt_path },
+    { "filesize",message_mt_filesize },
     { "is_new",  message_mt_is_new },
     { "get_flags", message_mt_get_flags },
     { "set_flags", message_mt_set_flags },

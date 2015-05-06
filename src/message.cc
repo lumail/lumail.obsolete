@@ -200,6 +200,15 @@ std::string CMessage::path()
     return (m_path);
 }
 
+size_t CMessage::filesize()
+{
+    struct stat s;
+
+    if (stat(path().c_str(), &s) < 0)
+        return -1;
+
+    return s.st_size;
+}
 
 /**
  * Update the path to the message.
