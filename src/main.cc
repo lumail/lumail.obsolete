@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 
     bool version         = false;      /* show version */
     bool exit_after_eval = false;      /* exit after eval? */
+    bool nodefault       = false;      /* skip default rcfiles? */
     std::string folder   = "";         /* open folder */
     std::string debug    = "";         /* debug-log */
     std::vector<std::string> rcfile;   /* load startup file(s) */
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
                 {"eval", required_argument, 0, 'e'},
                 {"exit", no_argument, 0, 'x'},
                 {"folder", required_argument, 0, 'f'},
+                {"nodefault", no_argument, 0, 'n'},
                 {"rcfile", required_argument, 0, 'r'},
                 {"version", no_argument, 0, 'v'},
                 {0, 0, 0, 0}
@@ -91,6 +93,9 @@ int main(int argc, char *argv[])
             break;
         case 'r':
             rcfile.push_back(optarg);
+            break;
+        case 'n':
+            nodefault = true;
             break;
         case 'v':
             version = true;
@@ -149,14 +154,17 @@ int main(int argc, char *argv[])
      * Load the default init files, and optionally the
      * one specified on the command line.
      */
-    if ( !obj->load_init_files( rcfile ) )
+    if ( !obj->load_init_files( rcfile, nodefault ) )
     {
         delete( obj );
 
         std::cerr << "No init file was loaded!" << std::endl;
 
-        std::cerr << "We tried to load both: /etc/lumail.lua & ~/.lumail/config.lua."
-                  << std::endl;
+        if (!nodefault)
+        {
+            std::cerr << "We tried to load both: /etc/lumail.lua & ~/.lumail/config.lua."
+                      << std::endl;
+        }
 
         std::cerr << "You should specify an init file to load via --rcfile"
                   << std::endl;

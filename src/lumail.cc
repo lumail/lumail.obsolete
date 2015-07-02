@@ -79,60 +79,64 @@ CLumail::~CLumail()
 /**
  * Load our standard init files, also the named file if it is present.
  */
-bool CLumail::load_init_files( std::vector<std::string> extra )
+bool CLumail::load_init_files( std::vector<std::string> extra,
+                               bool skip_default)
 {
     /**
      * Number of init-files we've loaded.
      */
     int init = 0;
 
-    /**
-     * If we've got /etc/lumail.lua then load it.
-     */
-    if ( m_lua->load_file("/etc/lumail.lua") )
+    if (!skip_default)
     {
-        init += 1;
-    }
-
-    /**
-     * Load /etc/lumail.d/ if present.
-     */
-    if ( CFile::is_directory( "/etc/lumail.d/" ) )
-    {
-        std::vector<std::string> files = CFile::files_in_directory( "/etc/lumail.d" );
-
-        for (std::string file : files)
+        /**
+         * If we've got /etc/lumail.lua then load it.
+         */
+        if ( m_lua->load_file("/etc/lumail.lua") )
         {
-            /**
-             * If the file ends in .lua then load it.
-             */
-            size_t offset = file.rfind('.');
-            if(offset != std::string::npos)
+            init += 1;
+        }
+
+        /**
+         * Load /etc/lumail.d/ if present.
+         */
+        if ( CFile::is_directory( "/etc/lumail.d/" ) )
+        {
+            std::vector<std::string> files = CFile::files_in_directory( "/etc/lumail.d" );
+
+            for (std::string file : files)
             {
                 /**
-                 * Get the lower-case version.
+                 * If the file ends in .lua then load it.
                  */
-                std::string extension = file.substr(offset+1);
-                std::transform(extension.begin(), extension.end(),
-                               extension.begin(), tolower );
-
-                if ( extension == "lua" )
+                size_t offset = file.rfind('.');
+                if(offset != std::string::npos)
                 {
-                    m_lua->load_file( file );
-                    init += 1;
+                    /**
+                     * Get the lower-case version.
+                     */
+                    std::string extension = file.substr(offset+1);
+                    std::transform(extension.begin(), extension.end(),
+                                   extension.begin(), tolower );
+
+                    if ( extension == "lua" )
+                    {
+                        m_lua->load_file( file );
+                        init += 1;
+                    }
                 }
             }
         }
+
+
+        /**
+         * Load the init-file from the users home-directory, if we can.
+         */
+        std::string home = getenv( "HOME" );
+        if ( ( ! home.empty() ) && ( CFile::exists( home + "/.lumail/config.lua" ) ) )
+             if ( m_lua->load_file( home + "/.lumail/config.lua") )
+                 init += 1;
     }
-
-
-    /**
-     * Load the init-file from the users home-directory, if we can.
-     */
-    std::string home = getenv( "HOME" );
-    if ( ( ! home.empty() ) && ( CFile::exists( home + "/.lumail/config.lua" ) ) )
-         if ( m_lua->load_file( home + "/.lumail/config.lua") )
-             init += 1;
 
     /**
      * If we have any init files specified then load it up too.
