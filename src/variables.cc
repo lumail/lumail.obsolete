@@ -202,7 +202,7 @@ int global_mode(lua_State * L)
     /**
      * This is valid only if we're setting the limit.
      */
-    const char *new_mode = lua_tostring(L, -1);
+    const char *new_mode = lua_tostring(L, 1);
 
     /**
      * If the new mode is being set we want to make sure

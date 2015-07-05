@@ -1,0 +1,5 @@
+mode = global_mode()
+io.write(mode.."\n")
+global_mode('text')
+mode = global_mode()
+io.write(mode.."\n")
