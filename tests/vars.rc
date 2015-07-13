@@ -1,3 +1,4 @@
 local testvar = require('testutil').testvar
 
 testvar(history_file, 'blah', 'foo')
+testvar(index_limit, 'blah2', 'foo2')
