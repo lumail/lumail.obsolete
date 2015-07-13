@@ -54,7 +54,7 @@
  */
 int get_set_string_variable( lua_State *L, const char * name )
 {
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
     CGlobal *g = CGlobal::Instance();
 
     if (str != NULL)

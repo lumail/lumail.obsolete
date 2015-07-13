@@ -1,0 +1,5 @@
+col = body_colour()
+io.write(col.."\n")
+body_colour('blue')
+col = body_colour()
+io.write(col.."\n")
