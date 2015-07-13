@@ -1,6 +1,6 @@
 local M = {}
 
-function M.testvar(setter, origval, newval)
+function M.testvar(setter, newval)
     local val = setter()
     io.write(val..'\n')
     setter(newval)
