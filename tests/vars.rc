@@ -2,3 +2,5 @@ local testvar = require('testutil').testvar
 
 testvar(history_file, 'foo')
 testvar(index_limit, 'foo2')
+--md_prefix = maildir_prefix()
+testvar(maildir_prefix, "/tmp/")

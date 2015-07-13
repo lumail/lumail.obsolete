@@ -356,7 +356,7 @@ int maildir_prefix(lua_State * L)
     /**
      * If we're setting it, make sure the value is sane.
      */
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
     if (str != NULL)
     {
 
