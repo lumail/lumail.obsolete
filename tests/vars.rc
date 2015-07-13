@@ -1,0 +1,3 @@
+local testvar = require('testutil').testvar
+
+testvar(history_file, 'blah', 'foo')

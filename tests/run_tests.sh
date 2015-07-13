@@ -26,7 +26,7 @@ run_rc() {
     fi
 
     set +e
-    diff "${expectfile}" "${stdoutfile}"
+    diff -u "${expectfile}" "${stdoutfile}"
     result="$?"
     set -e
     if [ $result -ne 0 ]; then
