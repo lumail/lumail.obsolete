@@ -407,7 +407,7 @@ int sendmail_path(lua_State * L)
  */
 int sent_mail(lua_State * L)
 {
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
     if (str != NULL)
     {
         if ( !CMaildir::is_maildir( str ) )
