@@ -18,3 +18,5 @@ util/parse-fmt
 obj.debug
 obj.release
 gmon.out
+tags
+tests/output

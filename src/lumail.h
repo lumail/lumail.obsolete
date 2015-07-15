@@ -48,8 +48,9 @@ public:
 
     /**
      * Load our standard init files, also the extra files if they're present.
+     * If nodefault is true, then skip the standard init files.
      */
-    bool load_init_files( std::vector<std::string> extra );
+    bool load_init_files( std::vector<std::string> extra, bool skip_default=false );
 
     /**
      * Open the given maildir.

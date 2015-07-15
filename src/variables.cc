@@ -54,7 +54,7 @@
  */
 int get_set_string_variable( lua_State *L, const char * name )
 {
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
     CGlobal *g = CGlobal::Instance();
 
     if (str != NULL)
@@ -202,7 +202,7 @@ int global_mode(lua_State * L)
     /**
      * This is valid only if we're setting the limit.
      */
-    const char *new_mode = lua_tostring(L, -1);
+    const char *new_mode = lua_tostring(L, 1);
 
     /**
      * If the new mode is being set we want to make sure
@@ -270,7 +270,7 @@ int history_file(lua_State *L )
     /**
      * This is valid only if we're setting the limit.
      */
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
 
     int ret =  get_set_string_variable( L, "history_file" );
 
@@ -301,7 +301,7 @@ int index_limit(lua_State * L)
     /**
      * This is valid only if we're setting the limit.
      */
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
 
     int ret =  get_set_string_variable( L, "index_limit" );
 
@@ -356,7 +356,7 @@ int maildir_prefix(lua_State * L)
     /**
      * If we're setting it, make sure the value is sane.
      */
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
     if (str != NULL)
     {
 
@@ -407,7 +407,7 @@ int sendmail_path(lua_State * L)
  */
 int sent_mail(lua_State * L)
 {
-    const char *str = lua_tostring(L, -1);
+    const char *str = lua_tostring(L, 1);
     if (str != NULL)
     {
         if ( !CMaildir::is_maildir( str ) )

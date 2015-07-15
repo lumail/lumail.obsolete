@@ -1,0 +1,2 @@
+io = require'io'
+io.write("Foo\n")
