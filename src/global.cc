@@ -539,7 +539,13 @@ void CGlobal::unset_folders()
  */
 void CGlobal::add_folder(std::string path)
 {
-    m_selected_folders.push_back(path);
+    /* First find the folder, in case it's already in the list. */
+    std::vector<std::string>::iterator it;
+    it = std::find(m_selected_folders.begin(), m_selected_folders.end(), path);
+    if (it == m_selected_folders.end())
+    {
+        m_selected_folders.push_back(path);
+    }
     assert( m_selected_folders.size() > 0 );
 }
 

@@ -1,0 +1,23 @@
+function dump_selected()
+    io.write("Selected: offset="..maildir_offset().."\n")
+    for i,f in ipairs(selected_folders()) do
+       io.write(" "..i.."  "..f.."\n")
+    end
+end
+set_selected_folder("output/md2")
+dump_selected()
+add_selected_folder("output/md1")
+dump_selected()
+add_selected_folder()
+dump_selected()
+
+set_selected_folder()
+dump_selected()
+
+set_selected_folder("output/md1")
+dump_selected()
+toggle_selected_folder("output/md2")
+dump_selected()
+
+toggle_selected_folder()
+dump_selected()
