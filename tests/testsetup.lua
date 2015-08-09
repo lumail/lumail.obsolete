@@ -2,3 +2,4 @@
 local io = require('io')
 local os = require('os')
 io.output(os.getenv("OUTFILE"))
+maildir_prefix('output')

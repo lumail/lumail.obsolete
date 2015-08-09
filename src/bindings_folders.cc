@@ -44,8 +44,8 @@ int add_selected_folder(lua_State * L)
      */
     const char *str = NULL;
 
-    if (lua_isstring(L, -1))
-        str = lua_tostring(L, -1);
+    if (lua_isstring(L, 1))
+        str = lua_tostring(L, 1);
 
     CGlobal *global = CGlobal::Instance();
     CLua    *lua    = CLua::Instance();
@@ -148,8 +148,8 @@ int set_selected_folder(lua_State * L)
      */
     const char *str = NULL;
 
-    if (lua_isstring(L, -1))
-        str =lua_tostring(L, -1);
+    if (lua_isstring(L, 1))
+        str =lua_tostring(L, 1);
 
     CGlobal *global = CGlobal::Instance();
     global->unset_folders();
@@ -167,9 +167,11 @@ int set_selected_folder(lua_State * L)
         CMaildirList display = global->get_folders();
         int selected = global->get_selected_folder();
 
-        std::shared_ptr<CMaildir> x = display[selected];
-        path = x->path();
-        global->add_folder(path.c_str());
+        if ((selected >= 0) && (size_t)selected < display.size()) {
+            std::shared_ptr<CMaildir> x = display[selected];
+            path = x->path();
+            global->add_folder(path.c_str());
+        }
     }
     else
     {
@@ -200,8 +202,8 @@ int toggle_selected_folder(lua_State * L)
      */
     const char *str = NULL;
 
-    if (lua_isstring(L, -1))
-        str = lua_tostring(L, -1);
+    if (lua_isstring(L, 1))
+        str = lua_tostring(L, 1);
 
     CGlobal *global = CGlobal::Instance();
     std::vector < std::string > sfolders = global->get_selected_folders();

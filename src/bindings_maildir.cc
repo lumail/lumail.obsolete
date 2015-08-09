@@ -72,6 +72,11 @@ int current_maildir(lua_State * L)
      * Get the selected object.
      */
     int selected = global->get_selected_folder();
+    if ((selected >= 0) && (size_t)selected >= display.size()) {
+        /* No selected folder. */
+        lua_pushnil(L);
+        return 1;
+    }
     std::shared_ptr<CMaildir> x = display[selected];
     assert(x != NULL);
 
