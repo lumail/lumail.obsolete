@@ -422,9 +422,9 @@ static int lmaildir_matches_regexp(lua_State *L)
 static int lmaildir_getMessages(lua_State *L)
 {
     std::shared_ptr<CMaildir> maildir = check_maildir(L, 1);
-    
+
     CMessageList messages = maildir->getMessages();
-    
+
     /* And return the result */
     push_message_list(L, messages);
     return 1;

@@ -1483,7 +1483,7 @@ int save_message( lua_State *L )
      * Actually copy the message.
      */
     msg->copy(str);
-    
+
     /**
      * Remove source.
      */
@@ -1732,7 +1732,7 @@ static int message_mt_gc(lua_State *L)
     if (ud)
     {
         std::shared_ptr<CMessage> *ud_message = static_cast<std::shared_ptr<CMessage> *>(ud);
-        
+
         /* Call the destructor */
         ud_message->~shared_ptr<CMessage>();
     }
@@ -2006,7 +2006,7 @@ static void push_message_mt(lua_State *L)
     {
         /* A new table was created, set it up now. */
         luaL_register(L, NULL, message_mt_fields);
-        
+
         /* Set itself as its __index */
         lua_pushvalue(L, -1);
         lua_setfield(L, -2, "__index");
@@ -2023,7 +2023,7 @@ bool push_message(lua_State *L, std::shared_ptr<CMessage> message)
     void *ud = lua_newuserdata(L, sizeof(std::shared_ptr<CMessage>));
     if (!ud)
         return false;
-    
+
     /* Construct a blank shared_ptr.  To be safe, make sure it's a valid
      * object before setting the metatable. */
     std::shared_ptr<CMessage> *ud_message = new (ud) std::shared_ptr<CMessage>();
@@ -2033,15 +2033,15 @@ bool push_message(lua_State *L, std::shared_ptr<CMessage> message)
         lua_pop(L, 1);
         return false;
     }
-    
+
     /* FIXME: check errors */
     push_message_mt(L);
-    
+
     lua_setmetatable(L, -2);
-    
+
     /* And now store the maildir pointer into the userdata */
     *ud_message = message;
-    
+
     return true;
 }
 
@@ -2058,7 +2058,7 @@ bool push_message_list(lua_State *L,
     {
         if (!push_message(L, messages[i]))
             return false;
-        
+
         /* Add to the table. */
         lua_rawseti(L, -2, i+1);
     }
