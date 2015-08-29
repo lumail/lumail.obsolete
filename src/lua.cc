@@ -472,6 +472,16 @@ bool CLua::on_keypress(const char *keypress)
     return( result != NULL );
 }
 
+/**
+ * Execute the on_create_reply function.
+ */
+std::unique_ptr<std::string> CLua::on_create_reply(std::shared_ptr<CMessage> msg,
+                                                   const std::vector<std::string> &headers)
+{
+    std::unique_ptr<std::stdring> result;
+
+    
+}
 
 /**
  * Invoke the Lua-defined on_key() callback.

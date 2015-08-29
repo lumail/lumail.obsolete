@@ -1349,22 +1349,35 @@ int reply(lua_State * L)
         }
     }
 
-    /**
-     * Body
-     */
-    std::vector<UTFString> body = mssg->body();
-    std::string bbody ;
-
-    int lines =(int)body.size();
-    for( int i = 0; i < lines; i++ )
+    bool have_message = false;
+    std::string filename;
+    
+    std::unique_ptr<std::string> filename_ptr = lua->on_create_reply(mssg, headers);
+    if (filename_ptr)
     {
-        bbody += "> " + body[i] + "\n";
+        filename = *filename_ptr;
+        have_message = true;
     }
 
-    /**
-     * Write it out.
-     */
-    std::string filename = populate_email_on_disk(  headers, bbody, sig );
+    if (!have_message)
+    {
+        /**
+         * Body
+         */
+        std::vector<UTFString> body = mssg->body();
+        std::string bbody ;
+
+        int lines =(int)body.size();
+        for( int i = 0; i < lines; i++ )
+        {
+            bbody += "> " + body[i] + "\n";
+        }
+
+        /**
+         * Write it out.
+         */
+        filename = populate_email_on_disk(  headers, bbody, sig );
+    }
 
     /**
      * Loop with the actions menu.

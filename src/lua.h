@@ -34,7 +34,6 @@ class CMaildir;
 class CMessage;
 
 
-
 /**
  * A structure for storing the mapping between Lua-function names,
  * and their C-implementations.
@@ -177,6 +176,12 @@ public:
      * Execute a function from the global keymap.
      */
     bool on_keypress(const char *keypress );
+
+    /**
+     * Execute the on_create_reply function.
+     */
+    std::unique_ptr<std::string> on_create_reply(std::shared_ptr<CMessage> msg,
+                                                 const std::vector<std::string> &headers);
 
     /**
      * Does the named function exist?
