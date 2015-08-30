@@ -1487,7 +1487,7 @@ int save_message( lua_State *L )
     /**
      * Remove source.
      */
-    msg->delete_msg();
+    msg->remove();
 
     /**
      * Update messages
@@ -1885,12 +1885,12 @@ static int message_mt_copy(lua_State *L)
     return 0;
 }
 
-static int message_mt_delete(lua_State *L)
+static int message_mt_remove(lua_State *L)
 {
     std::shared_ptr<CMessage> message = check_message(L, 1);
     if (message)
     {
-        message->delete_msg();
+        message->remove();
     }
     return 0;
 }
@@ -1964,7 +1964,7 @@ static const luaL_Reg message_mt_fields[] = {
     { "has_flag", message_mt_has_flag },
     { "remove_flag", message_mt_remove_flag },
     { "copy",    message_mt_copy },
-    { "delete",  message_mt_delete },
+    { "remove",  message_mt_remove },
     { "header",  message_mt_header },
     { "get_date_field", message_mt_get_date_field },
 #if 0

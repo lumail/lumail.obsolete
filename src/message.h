@@ -82,7 +82,7 @@ public:
     /**
      * Remove this message.
      */
-    void delete_msg();
+    void remove();
 
     /**
      * Format the message for display in the header - via the Lua format string.

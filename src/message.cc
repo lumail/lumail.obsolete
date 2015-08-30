@@ -251,7 +251,7 @@ void CMessage::copy ( const char *destdir )
 /**
  * Remove this message.
  */
-void CMessage::delete_msg()
+void CMessage::remove()
 {
     CFile::delete_file( path() );
 }
