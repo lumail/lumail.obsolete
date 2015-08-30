@@ -1,4 +1,4 @@
-test: output output/md1 output/md2
+test: output
 	./run_tests.sh "$(LUMAIL)"
 
 clean:
@@ -6,15 +6,3 @@ clean:
 
 output:
 	mkdir -p $@
-
-output/md1: output
-	mkdir -p $@
-	mkdir -p $@/cur
-	mkdir -p $@/new
-	mkdir -p $@/tmp
-
-output/md2: output
-	mkdir -p $@
-	mkdir -p $@/cur
-	mkdir -p $@/new
-	mkdir -p $@/tmp
