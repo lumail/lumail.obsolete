@@ -1793,30 +1793,27 @@ static int message_mt_is_new(lua_State *L)
     return 0;
 }
 
-static int message_mt_get_flags(lua_State *L)
+static int message_mt_flags(lua_State *L)
 {
     std::shared_ptr<CMessage> message = check_message(L, 1);
     if (message)
     {
-        lua_pushstring(L, message->get_flags().c_str());
-        return 1;
+        const char *new_flags = lua_tostring(L, 2);
+        if (!new_flags)
+        {
+            lua_pushstring(L, message->get_flags().c_str());
+            return 1;
+        }
+        else
+        {
+            message->set_flags(new_flags);
+            return 0;
+        }
     }
-    return 0;
-}
-
-static int message_mt_set_flags(lua_State *L)
-{
-    std::shared_ptr<CMessage> message = check_message(L, 1);
-    if (!message)
+    else
     {
         return luaL_error(L, "Invalid message.");
     }
-    const char *new_flags = luaL_checkstring(L, 2);
-    if (!new_flags)
-    {
-        return luaL_error(L, "Invalid flags: expected string.");
-    }
-    message->set_flags(new_flags);
     return 0;
 }
 
@@ -1927,39 +1924,14 @@ static int message_mt_get_date_field(lua_State *L)
 }
 
 /**
- * Read message fields
- */
-static int message_mt_index(lua_State *L)
-{
-    std::shared_ptr<CMessage> message = check_message(L, 1);
-    if (message)
-    {
-        const char *name = luaL_checkstring(L, 2);
-        if (strcmp(name, "path") == 0)
-        {
-            lua_pushstring(L, message->path().c_str());
-            return 1;
-        }
-        else if (strcmp(name, "is_new") == 0)
-        {
-            lua_pushboolean(L, message->is_new());
-            return 1;
-        }
-    }
-    return 0;
-}
-
-/**
  * The message metatable entries.
  */
 static const luaL_Reg message_mt_fields[] = {
-    { "__index", message_mt_index },
     { "__gc",    message_mt_gc },
     { "path",    message_mt_path },
     { "filesize",message_mt_filesize },
     { "is_new",  message_mt_is_new },
-    { "get_flags", message_mt_get_flags },
-    { "set_flags", message_mt_set_flags },
+    { "flags", message_mt_flags },
     { "add_flag", message_mt_add_flag },
     { "has_flag", message_mt_has_flag },
     { "remove_flag", message_mt_remove_flag },
