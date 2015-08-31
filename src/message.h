@@ -72,7 +72,7 @@ public:
     /**
      * Return the size of the message on disk.
      */
-    size_t filesize();
+    size_t size();
 
     /**
      * Copy this message to a different maildir.

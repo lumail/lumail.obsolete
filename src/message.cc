@@ -200,7 +200,7 @@ std::string CMessage::path()
     return (m_path);
 }
 
-size_t CMessage::filesize()
+size_t CMessage::size()
 {
     struct stat s;
 
