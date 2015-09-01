@@ -247,6 +247,13 @@ public:
      */
     static size_t len(lua_State *L, int index);
 
+    /**
+     * Convert a table of strings at index to a vector of strings.
+     *
+     * On error, returns an empty vector.
+     */
+    static std::vector<std::string> get_string_list(lua_State *L, int index);
+
 protected:
 
     /**

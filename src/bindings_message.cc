@@ -207,6 +207,21 @@ std::string populate_email_on_disk( std::vector<std::string> headers, std::strin
 
 }
 
+/*
+ * Create an email on-disk, in a temporary file (Lua interface).
+ */
+int write_message_to_disk(lua_State *L)
+{
+    std::vector<std::string> headers = CLua::get_string_list(L, 1);
+    const char *body = luaL_checkstring(L, 2);
+    const char *sig = luaL_checkstring(L, 3);
+
+    std::string result = populate_email_on_disk(headers, body, sig);
+    lua_pushstring(L, result.c_str());
+    /* One result */
+    return 1;
+}
+
 
 /**
  * Send the mail in the given file, and archive it.
@@ -1936,6 +1951,32 @@ static int message_mt_get_date_field(lua_State *L)
     return 1;
 }
 
+static bool push_utfstring_list(lua_State *L,
+                             const std::vector<UTFString> &strings)
+{
+    lua_createtable(L, strings.size(), 0);
+    for (size_t i=0; i<strings.size(); ++i)
+    {
+        lua_pushstring(L, strings[i].c_str());
+
+        /* Add to the table. */
+        lua_rawseti(L, -2, i+1);
+    }
+    return true;
+}
+
+static int message_mt_body(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        push_utfstring_list(L, message->body());
+        return 1;
+    }
+    return 0;
+}
+
+
 /**
  * The message metatable entries.
  */
@@ -1952,6 +1993,7 @@ static const luaL_Reg message_mt_fields[] = {
     { "remove",  message_mt_remove },
     { "header",  message_mt_header },
     { "get_date_field", message_mt_get_date_field },
+    { "body", message_mt_body },
 #if 0
 all_headers
 attachment

@@ -168,6 +168,7 @@ struct CLuaMapping primitive_list[] =
     {"scroll_message_up", "Scroll the current message up.", (lua_CFunction) scroll_message_up },
     {"scroll_message_to", "Scroll the current message to the next matching regexp.", (lua_CFunction) scroll_message_to },
     {"send_email", "Send an email, via Lua.", (lua_CFunction) send_email },
+    {"write_message_to_disk", "Write a message to disk.", (lua_CFunction)write_message_to_disk },
 
 /**
  * Maildir-related functions, defined in bindings_maildirs.cc
@@ -472,15 +473,56 @@ bool CLua::on_keypress(const char *keypress)
     return( result != NULL );
 }
 
+/*
+ * Push a vector<string> as a Lua table of strings.
+ */
+static bool push_string_list(lua_State *L,
+                             const std::vector<std::string> &strings)
+{
+    lua_createtable(L, strings.size(), 0);
+    for (size_t i=0; i<strings.size(); ++i)
+    {
+        lua_pushstring(L, strings[i].c_str());
+
+        /* Add to the table. */
+        lua_rawseti(L, -2, i+1);
+    }
+    return true;
+}
+
 /**
  * Execute the on_create_reply function.
  */
 std::unique_ptr<std::string> CLua::on_create_reply(std::shared_ptr<CMessage> msg,
                                                    const std::vector<std::string> &headers)
 {
-    std::unique_ptr<std::stdring> result;
+    std::unique_ptr<std::string> result;
 
-    
+    lua_getglobal(m_lua, "on_create_reply");
+    if (!lua_isfunction(m_lua, -1))
+        return nullptr;
+
+    if (!push_message(m_lua, msg))
+    {
+        return nullptr;
+    }
+
+    if (!push_string_list(m_lua, headers))
+    {
+        return nullptr;
+    }
+
+    if (lua_pcall(m_lua, 2, 1 , 0 ) != 0)
+    {
+        return nullptr;
+    }
+
+    const char *str = lua_tostring(m_lua,-1);
+    if (str)
+    {
+        result.reset(new std::string(str));
+    }
+    return result;
 }
 
 /**
@@ -607,6 +649,30 @@ std::vector<std::string> CLua::on_complete()
     return( results );
 }
 
+
+std::vector<std::string> CLua::get_string_list(lua_State *L, int index)
+{
+    std::vector<std::string> results;
+
+    lua_pushnil(L);
+
+    while (lua_next(L, index))
+    {
+        const char *d  = lua_tostring(L, -1);
+
+#ifdef LUMAIL_DEBUG
+        std::string dm = "\tFound:";
+        dm += d;
+        DEBUG_LOG( dm );
+#endif
+
+        results.push_back( d );
+        lua_pop( L , 1);
+    }
+
+
+    return results;
+}
 
 /**
  * Convert a Lua table to an array of strings.
