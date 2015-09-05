@@ -1321,3 +1321,14 @@ function sb()
    x:write( jpg )
    x:close()
 end
+
+--[[
+-- Example on_create_reply function, which adds "On <date>, <person> wrote:"
+function on_create_reply(msg, headers)
+    local body = msg:body()
+    local bodystring = table.concat(body, '\n> ')
+    bodystring = string.format("On %s, %s wrote:\n> ", msg:header("date"), msg:header("from")) .. bodystring
+    local filename = write_message_to_disk(headers, bodystring, "Some signature")
+    return filename
+end
+]]

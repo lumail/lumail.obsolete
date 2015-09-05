@@ -31,7 +31,7 @@ extern "C"
 
 
 class CMaildir;
-
+class CMessage;
 
 
 /**
@@ -178,6 +178,12 @@ public:
     bool on_keypress(const char *keypress );
 
     /**
+     * Execute the on_create_reply function.
+     */
+    std::unique_ptr<std::string> on_create_reply(std::shared_ptr<CMessage> msg,
+                                                 const std::vector<std::string> &headers);
+
+    /**
      * Does the named function exist?
      */
     bool is_function( const char *name );
@@ -206,6 +212,25 @@ public:
     std::vector<std::shared_ptr<CMaildir> > call_maildirs(const char *name,
                                                           const std::vector<std::shared_ptr<CMaildir> > &maildirs);
 
+    /**
+     * Call a global Lua function "name", passing a vector of CMessages
+     * (converted to a Lua table).
+     *
+     * The result is (if possible) converted back to a vector of CMessages.
+     * On error an empty vector is returned.
+     */
+    std::vector<std::shared_ptr<CMessage> > call_messages(const char *name,
+                                                          const std::vector<std::shared_ptr<CMessage> > &messages);
+
+    /**
+     * Call a global function, passing a CMessage, and return the
+     * a string (as converted by Lua's tostring).
+     *
+     * On an error, returns the onerror value, which defaults to true
+     * so that folders aren't accidentally hidden by a Lua error.
+     */
+    std::string call_message_str(const char *name, std::shared_ptr<CMessage> message, std::string onerror="");
+
 /**
  ** Static helper methods.
  **/
@@ -221,6 +246,13 @@ public:
      * stack (not using any metamethods).
      */
     static size_t len(lua_State *L, int index);
+
+    /**
+     * Convert a table of strings at index to a vector of strings.
+     *
+     * On error, returns an empty vector.
+     */
+    static std::vector<std::string> get_string_list(lua_State *L, int index);
 
 protected:
 

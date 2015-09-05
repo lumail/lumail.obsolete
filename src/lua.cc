@@ -168,6 +168,7 @@ struct CLuaMapping primitive_list[] =
     {"scroll_message_up", "Scroll the current message up.", (lua_CFunction) scroll_message_up },
     {"scroll_message_to", "Scroll the current message to the next matching regexp.", (lua_CFunction) scroll_message_to },
     {"send_email", "Send an email, via Lua.", (lua_CFunction) send_email },
+    {"write_message_to_disk", "Write a message to disk.", (lua_CFunction)write_message_to_disk },
 
 /**
  * Maildir-related functions, defined in bindings_maildirs.cc
@@ -472,6 +473,57 @@ bool CLua::on_keypress(const char *keypress)
     return( result != NULL );
 }
 
+/*
+ * Push a vector<string> as a Lua table of strings.
+ */
+static bool push_string_list(lua_State *L,
+                             const std::vector<std::string> &strings)
+{
+    lua_createtable(L, strings.size(), 0);
+    for (size_t i=0; i<strings.size(); ++i)
+    {
+        lua_pushstring(L, strings[i].c_str());
+
+        /* Add to the table. */
+        lua_rawseti(L, -2, i+1);
+    }
+    return true;
+}
+
+/**
+ * Execute the on_create_reply function.
+ */
+std::unique_ptr<std::string> CLua::on_create_reply(std::shared_ptr<CMessage> msg,
+                                                   const std::vector<std::string> &headers)
+{
+    std::unique_ptr<std::string> result;
+
+    lua_getglobal(m_lua, "on_create_reply");
+    if (!lua_isfunction(m_lua, -1))
+        return nullptr;
+
+    if (!push_message(m_lua, msg))
+    {
+        return nullptr;
+    }
+
+    if (!push_string_list(m_lua, headers))
+    {
+        return nullptr;
+    }
+
+    if (lua_pcall(m_lua, 2, 1 , 0 ) != 0)
+    {
+        return nullptr;
+    }
+
+    const char *str = lua_tostring(m_lua,-1);
+    if (str)
+    {
+        result.reset(new std::string(str));
+    }
+    return result;
+}
 
 /**
  * Invoke the Lua-defined on_key() callback.
@@ -597,6 +649,30 @@ std::vector<std::string> CLua::on_complete()
     return( results );
 }
 
+
+std::vector<std::string> CLua::get_string_list(lua_State *L, int index)
+{
+    std::vector<std::string> results;
+
+    lua_pushnil(L);
+
+    while (lua_next(L, index))
+    {
+        const char *d  = lua_tostring(L, -1);
+
+#ifdef LUMAIL_DEBUG
+        std::string dm = "\tFound:";
+        dm += d;
+        DEBUG_LOG( dm );
+#endif
+
+        results.push_back( d );
+        lua_pop( L , 1);
+    }
+
+
+    return results;
+}
 
 /**
  * Convert a Lua table to an array of strings.
@@ -887,9 +963,9 @@ CMaildirList CLua::call_maildirs(const char *name,
     {
         return result;
     }
-    
+
     int error = lua_pcall(m_lua, 1, 1, 0);
-    
+
     if (error)
     {
         lua_getglobal(m_lua, "on_error");
@@ -912,6 +988,96 @@ CMaildirList CLua::call_maildirs(const char *name,
     return check_maildir_list(m_lua, -1);
 }
 
+/**
+ * Call a global Lua function "name", passing a vector of CMessages
+ * (converted to a Lua table).
+ *
+ * The result is (if possible) converted back to a vector of CMessages.
+ * On error an empty vector is returned.
+ */
+CMessageList CLua::call_messages(const char *name,
+                                 const CMessageList &messages)
+{
+    CMessageList result;
+
+    lua_getglobal(m_lua, name);
+
+    if (!lua_isfunction(m_lua, -1))
+    {
+        return result;
+    }
+
+    if (!push_message_list(m_lua, messages))
+    {
+        return result;
+    }
+
+    int error = lua_pcall(m_lua, 1, 1, 0);
+
+    if (error)
+    {
+        lua_getglobal(m_lua, "on_error");
+        /* We could check for an error, but what can we do?  Instead we'll
+         * just get an error from lua_pcall. */
+
+        /* Push the error string from the previous pcall onto the top of
+         * the stack. */
+        lua_pushvalue(m_lua, -2);
+
+        /* And call the error handler. */
+        lua_pcall(m_lua, 1, 0, 0);
+
+        return result;
+    }
+
+    /* The call returned successfully, so return the actual result as a
+     * boolean
+     */
+    return check_message_list(m_lua, -1);
+}
+
+std::string CLua::call_message_str(const char *name,
+                                   std::shared_ptr<CMessage> message,
+                                   std::string onerror)
+{
+    std::string result;
+    lua_getglobal(m_lua, name);
+
+    if (!lua_isfunction(m_lua, -1))
+    {
+        return onerror;
+    }
+
+    if (!push_message(m_lua, message))
+    {
+        return onerror;
+    }
+
+    int error = lua_pcall(m_lua, 1, 1, 0);
+    if (error)
+    {
+        lua_getglobal(m_lua, "on_error");
+        /* We could check for an error, but what can we do?  Instead we'll
+         * just get an error from lua_pcall. */
+
+        /* Push the error string from the previous pcall onto the top of
+         * the stack. */
+        lua_pushvalue(m_lua, -2);
+
+        /* And call the error handler. */
+        lua_pcall(m_lua, 1, 0, 0);
+
+        return onerror;
+    }
+
+    const char *s = lua_tostring(m_lua,-1);
+    if (s) {
+        result = s;
+    } else {
+        return onerror;
+    }
+    return result;
+}
 
 void CLua::reg_funcs(lua_State *L, const luaL_Reg *funcs)
 {

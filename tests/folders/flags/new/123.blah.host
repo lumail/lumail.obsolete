@@ -1,0 +1,7 @@
+Envelope-to: user@example.com
+Date: Sun 30 Aug 2015 23:00:00 +0000 (GMT)
+From: sender@example.com
+To: recipient@example.com
+Subject: Example subject
+
+Hi there

@@ -1,0 +1,10 @@
+set_selected_folder('output/folders/flags')
+io.write(('Messages: %d\n'):format(count_messages()))
+local idx = 0
+while idx < count_messages() do
+    jump_index_to(idx)
+    local msg = current_message()
+    local flags = msg:flags()
+    io.write('got flags: '..flags..'\n')
+    idx = idx + 1
+end

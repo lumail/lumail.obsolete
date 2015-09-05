@@ -3,7 +3,7 @@ foo
 all
 foo2
 output
-output/md1
+output/folders/md/md1
 nil
-output/md1
+output/folders/md/md1
 Exit: 0

@@ -207,6 +207,21 @@ std::string populate_email_on_disk( std::vector<std::string> headers, std::strin
 
 }
 
+/*
+ * Create an email on-disk, in a temporary file (Lua interface).
+ */
+int write_message_to_disk(lua_State *L)
+{
+    std::vector<std::string> headers = CLua::get_string_list(L, 1);
+    const char *body = luaL_checkstring(L, 2);
+    const char *sig = luaL_checkstring(L, 3);
+
+    std::string result = populate_email_on_disk(headers, body, sig);
+    lua_pushstring(L, result.c_str());
+    /* One result */
+    return 1;
+}
+
 
 /**
  * Send the mail in the given file, and archive it.
@@ -755,18 +770,13 @@ int current_message(lua_State * L)
     }
 
     /**
-     * If that succeeded store the path.
+     * If that succeeded push it onto the Lua stack.
      */
-    std::string source = msg->path();
-    if ( !source.empty() )
-    {
-        lua_pushstring(L, source.c_str());
-        return(1);
-    }
-    else
+    if (!push_message(L, msg))
     {
         return 0;
     }
+    return 1;
 }
 
 
@@ -1354,22 +1364,35 @@ int reply(lua_State * L)
         }
     }
 
-    /**
-     * Body
-     */
-    std::vector<UTFString> body = mssg->body();
-    std::string bbody ;
-
-    int lines =(int)body.size();
-    for( int i = 0; i < lines; i++ )
+    bool have_message = false;
+    std::string filename;
+    
+    std::unique_ptr<std::string> filename_ptr = lua->on_create_reply(mssg, headers);
+    if (filename_ptr)
     {
-        bbody += "> " + body[i] + "\n";
+        filename = *filename_ptr;
+        have_message = true;
     }
 
-    /**
-     * Write it out.
-     */
-    std::string filename = populate_email_on_disk(  headers, bbody, sig );
+    if (!have_message)
+    {
+        /**
+         * Body
+         */
+        std::vector<UTFString> body = mssg->body();
+        std::string bbody ;
+
+        int lines =(int)body.size();
+        for( int i = 0; i < lines; i++ )
+        {
+            bbody += "> " + body[i] + "\n";
+        }
+
+        /**
+         * Write it out.
+         */
+        filename = populate_email_on_disk(  headers, bbody, sig );
+    }
 
     /**
      * Loop with the actions menu.
@@ -1484,25 +1507,15 @@ int save_message( lua_State *L )
         return( 0 );
     }
 
-    /**
-     * Got a message ?
+    /*
+     * Actually copy the message.
      */
-    std::string source = msg->path();
-
-    /**
-     * The new path.
-     */
-    std::string dest = CMaildir::message_in( str, ( msg->is_new() ) );
-
-    /**
-     * Copy from source to destination.
-     */
-    CFile::copy( source, dest );
+    msg->copy(str);
 
     /**
      * Remove source.
      */
-    CFile::delete_file( source.c_str() );
+    msg->remove();
 
     /**
      * Update messages
@@ -1738,4 +1751,366 @@ int send_email(lua_State *L)
     return 0;
 }
 
+/**
+ * Delete the Message pointer
+ */
+static int message_mt_gc(lua_State *L)
+{
+    void *ud = luaL_checkudata(L, 1, "message_mt");
+    if (ud)
+    {
+        std::shared_ptr<CMessage> *ud_message = static_cast<std::shared_ptr<CMessage> *>(ud);
 
+        /* Call the destructor */
+        ud_message->~shared_ptr<CMessage>();
+    }
+    return 0;
+}
+
+/**
+ * Verify that an item on the Lua stack is a wrapped CMessage, and return
+ * a (shared) pointer to it of so.
+ *
+ * Returns NULL otherwise.
+ */
+static std::shared_ptr<CMessage> check_message(lua_State *L, int index)
+{
+    void *ud = luaL_checkudata(L, index, "message_mt");
+    if (ud)
+    {
+        /* Return a copy of the pointer */
+        return *(static_cast<std::shared_ptr<CMessage> *>(ud));
+    }
+    else
+    {
+        /* Invalid, so return a null pointer */
+        return NULL;
+    }
+}
+
+static int message_mt_path(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushstring(L, message->path().c_str());
+        return 1;
+    }
+    return 0;
+}
+
+static int message_mt_size(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushinteger(L, message->size());
+        return 1;
+    }
+    return 0;
+}
+
+static int message_mt_is_new(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        lua_pushboolean(L, message->is_new());
+        return 1;
+    }
+    return 0;
+}
+
+static int message_mt_flags(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        const char *new_flags = lua_tostring(L, 2);
+        if (!new_flags)
+        {
+            lua_pushstring(L, message->get_flags().c_str());
+            return 1;
+        }
+        else
+        {
+            message->set_flags(new_flags);
+            return 0;
+        }
+    }
+    else
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    return 0;
+}
+
+static int message_mt_add_flag(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flag = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!new_flag || !new_flag[0] || new_flag[1])
+    {
+        return luaL_error(L, "Invalid flags: expected of length 1.");
+    }
+    bool result = message->add_flag(new_flag[0]);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+static int message_mt_has_flag(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flag = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!new_flag || !new_flag[0] || new_flag[1])
+    {
+        return luaL_error(L, "Invalid flags: expected of length 1.");
+    }
+    bool result = message->has_flag(new_flag[0]);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+static int message_mt_remove_flag(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *new_flag = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!new_flag || !new_flag[0] || new_flag[1])
+    {
+        return luaL_error(L, "Invalid flags: expected of length 1.");
+    }
+    bool result = message->remove_flag(new_flag[0]);
+    lua_pushboolean(L, result);
+    return 1;
+}
+
+static int message_mt_copy(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        const char *destdir = luaL_checkstring(L, 2);
+        message->copy(destdir);
+    }
+    return 0;
+}
+
+static int message_mt_remove(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        message->remove();
+    }
+    return 0;
+}
+
+static int message_mt_header(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    const char *header_name = luaL_checkstring(L, 2);
+    /* Only accept a single character */
+    if (!header_name)
+    {
+        return luaL_error(L, "Invalid header name.");
+    }
+    std::string result = message->header(header_name);
+    lua_pushstring(L, result.c_str());
+    return 1;
+}
+
+static int message_mt_get_date_field(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (!message)
+    {
+        return luaL_error(L, "Invalid message.");
+    }
+    time_t result = message->get_date_field();
+    lua_pushnumber(L, result);
+
+    return 1;
+}
+
+static bool push_utfstring_list(lua_State *L,
+                             const std::vector<UTFString> &strings)
+{
+    lua_createtable(L, strings.size(), 0);
+    for (size_t i=0; i<strings.size(); ++i)
+    {
+        lua_pushstring(L, strings[i].c_str());
+
+        /* Add to the table. */
+        lua_rawseti(L, -2, i+1);
+    }
+    return true;
+}
+
+static int message_mt_body(lua_State *L)
+{
+    std::shared_ptr<CMessage> message = check_message(L, 1);
+    if (message)
+    {
+        push_utfstring_list(L, message->body());
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * The message metatable entries.
+ */
+static const luaL_Reg message_mt_fields[] = {
+    { "__gc",    message_mt_gc },
+    { "path",    message_mt_path },
+    { "size",message_mt_size },
+    { "is_new",  message_mt_is_new },
+    { "flags", message_mt_flags },
+    { "add_flag", message_mt_add_flag },
+    { "has_flag", message_mt_has_flag },
+    { "remove_flag", message_mt_remove_flag },
+    { "copy",    message_mt_copy },
+    { "remove",  message_mt_remove },
+    { "header",  message_mt_header },
+    { "get_date_field", message_mt_get_date_field },
+    { "body", message_mt_body },
+#if 0
+all_headers
+attachment
+attachments
+body
+bounce
+count_attachments
+count_body_parts
+count_lines
+delete
+forward
+get_body_part
+get_body_parts
+has_body_part
+mail_filter
+mark_read
+mark_unread
+message_offset
+on_delete_message?
+on_get_body?
+on_read_message?
+reply
+save
+save_attachment
+scroll_message_down/up/to?
+#endif
+    { NULL, NULL },  /* Terminator */
+};
+
+/**
+ * Push the message metatable onto the Lua stack, creating it if needed.
+ */
+static void push_message_mt(lua_State *L)
+{
+    int created = luaL_newmetatable(L, "message_mt");
+    if (created)
+    {
+        /* A new table was created, set it up now. */
+        luaL_register(L, NULL, message_mt_fields);
+
+        /* Set itself as its __index */
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -2, "__index");
+    }
+}
+
+/**
+ * Push a message onto the Lua stack as a userdata.
+ *
+ * Returns true on success.
+ */
+bool push_message(lua_State *L, std::shared_ptr<CMessage> message)
+{
+    void *ud = lua_newuserdata(L, sizeof(std::shared_ptr<CMessage>));
+    if (!ud)
+        return false;
+
+    /* Construct a blank shared_ptr.  To be safe, make sure it's a valid
+     * object before setting the metatable. */
+    std::shared_ptr<CMessage> *ud_message = new (ud) std::shared_ptr<CMessage>();
+    if (!ud_message)
+    {
+        /* Discard the userdata */
+        lua_pop(L, 1);
+        return false;
+    }
+
+    /* FIXME: check errors */
+    push_message_mt(L);
+
+    lua_setmetatable(L, -2);
+
+    /* And now store the maildir pointer into the userdata */
+    *ud_message = message;
+
+    return true;
+}
+
+/**
+ * Push a vector of CMessages onto the Lua stack as a table.
+ *
+ * Returns true on success.
+ */
+bool push_message_list(lua_State *L,
+                       const std::vector<std::shared_ptr<CMessage> > &messages)
+{
+    lua_createtable(L, messages.size(), 0);
+    for (size_t i=0; i<messages.size(); ++i)
+    {
+        if (!push_message(L, messages[i]))
+            return false;
+
+        /* Add to the table. */
+        lua_rawseti(L, -2, i+1);
+    }
+    return true;
+}
+
+/**
+ * Verify that an item on the Lua stack is a table of CMessage, and return
+ * this table converted back to a std::vector if so.
+ *
+ * Returns an empty vector otherwise.
+ */
+CMessageList check_message_list(lua_State *L, int index)
+{
+    CMessageList result;
+    size_t size = CLua::len(L, index);
+    for (size_t i=1; i<=size; ++i)
+    {
+        std::shared_ptr<CMessage> md;
+        lua_rawgeti(L, index, i);
+        md = check_message(L, -1);
+        /* Ignore anything that isn't a CMessage */
+        if (md)
+            result.push_back(check_message(L, -1));
+        lua_pop(L, 1);
+    }
+    return result;
+}

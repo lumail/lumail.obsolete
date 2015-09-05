@@ -14,6 +14,9 @@ run_rc() {
     local expectfile="${rc}.expected"
     local result
 
+    rm -fr output/folders
+    cp -r folders output/folders
+
     set +e  # Temporarily allow errors (which we'll capture).
       OUTFILE="${stdoutfile}" "${LUMAIL}" --nodefault --rcfile "testsetup.lua" --rcfile "${rc}" --eval "exit()"
       result="$?"

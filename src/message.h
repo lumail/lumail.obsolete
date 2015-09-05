@@ -29,6 +29,7 @@
 #include "attachment.h"
 
 
+class CMaildir;
 
 /**
  * A class for working with a single message.
@@ -67,6 +68,21 @@ public:
      * Update the path to the message, on-disk.
      */
     void path( std::string new_path );
+
+    /**
+     * Return the size of the message on disk.
+     */
+    size_t size();
+
+    /**
+     * Copy this message to a different maildir.
+     */
+    void copy( const char *destdir );
+
+    /**
+     * Remove this message.
+     */
+    void remove();
 
     /**
      * Format the message for display in the header - via the Lua format string.

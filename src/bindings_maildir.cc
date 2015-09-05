@@ -416,6 +416,21 @@ static int lmaildir_matches_regexp(lua_State *L)
 }
 
 /**
+ * Function which takes a CMaildir (userdata), and returns a table of
+ * messages in that folder.
+ */
+static int lmaildir_getMessages(lua_State *L)
+{
+    std::shared_ptr<CMaildir> maildir = check_maildir(L, 1);
+
+    CMessageList messages = maildir->getMessages();
+
+    /* And return the result */
+    push_message_list(L, messages);
+    return 1;
+}
+
+/**
  * Read maildir fields
  */
 static int maildir_mt_index(lua_State *L)
@@ -453,6 +468,15 @@ static int maildir_mt_index(lua_State *L)
              * the first argument and any others.
              */
             lua_pushcfunction(L, lmaildir_matches_regexp);
+            return 1;
+        }
+        else if (strcmp(name, "getMessages") == 0)
+        {
+            /* We return the function which implements the method, which
+             * will usually be called immediately with the CMaildir as
+             * the first argument and any others.
+             */
+            lua_pushcfunction(L, lmaildir_getMessages);
             return 1;
         }
     }

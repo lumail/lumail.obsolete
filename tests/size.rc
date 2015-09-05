@@ -1,0 +1,9 @@
+set_selected_folder('output/folders/size')
+io.write(('Messages: %d\n'):format(count_messages()))
+local idx = 0
+while idx < count_messages() do
+    jump_index_to(idx)
+    local msg = current_message()
+    io.write('size: '..msg:size()..'\n')
+    idx = idx + 1
+end
