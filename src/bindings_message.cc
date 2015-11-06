@@ -1366,7 +1366,7 @@ int reply(lua_State * L)
 
     bool have_message = false;
     std::string filename;
-    
+
     std::unique_ptr<std::string> filename_ptr = lua->on_create_reply(mssg, headers);
     if (filename_ptr)
     {
@@ -2032,7 +2032,11 @@ static void push_message_mt(lua_State *L)
     if (created)
     {
         /* A new table was created, set it up now. */
-        luaL_register(L, NULL, message_mt_fields);
+#if LUA_VERSION_NUM >= 502
+       luaL_setfuncs(L, message_mt_fields, 0); /* 5.2 /
+#else
+       luaL_register(L, NULL, message_mt_fields); / 5.1 */
+#endif
 
         /* Set itself as its __index */
         lua_pushvalue(L, -1);
