@@ -1,0 +1,44 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem	1.0
+
+name		lumail
+version		0.25
+categories	mail
+platforms	darwin
+license		GPL
+maintainers	nomaintainer@macports.org
+homepage	http://lumail.org
+master_sites	http://lumail.org/download \
+		https://github.com/skx/lumail
+
+description	Lightweight text-mode mail client, scriptable in Lua
+long_description Lumail is a new entrant into the world of email clients, \
+                 with the following four differences from existing projects: \
+                 * It works exclusively on Maildir hierarchies (no IMAP/POP) \
+                 * It is a modal client- you're always in one of four modes \
+                   maildir-mode: Shows you the list of folders. \
+                   index-mode: Shows you the list of messages. \
+                   message-mode: Shows you a single message. \
+                   text-mode: Shows you some simple text. \
+                 * Built in scripting with a mature language. \
+                 * Multi-folder operations.
+
+checksums        rmd160 c4a4a87bf0d4568ad2991dd89299882bd42a7675 \
+                 sha256 3c9777bd7b471ea17f6c25892fc1520d8b2bab23d76b8f786b5e19e679bc4ad5
+
+depends_lib      port:lua \
+                 port:ncurses \
+                 port:gmime \
+                 port:glibmm \
+                 port:pcre
+
+patchfiles	patch-Makefile.diff
+
+use_configure	 no
+# 'make all' fails
+build.target	 default
+
+destroot.args    PREFIX=/opt/local
+
